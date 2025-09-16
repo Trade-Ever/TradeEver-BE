@@ -41,6 +41,7 @@ public enum ErrorStatus {
     NOT_FOUND_AUCTION(HttpStatus.NOT_FOUND, "경매를 찾을 수 없습니다."),
     NOT_FOUND_BID(HttpStatus.NOT_FOUND, "입찰 내역이 없습니다."),
     NOT_FOUND_VEHICLE(HttpStatus.NOT_FOUND, "차량을 찾을 수 없습니다."),
+    PURCHASE_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "구매 신청을 찾을 수 없습니다."),
 
     /**
      * 500 SERVER_ERROR

@@ -4,7 +4,11 @@ import com.trever.backend.api.auction.entity.Auction;
 import com.trever.backend.api.auction.entity.Bid;
 import com.trever.backend.api.auction.repository.AuctionRepository;
 import com.trever.backend.api.auction.repository.BidRepository;
+import com.trever.backend.api.trade.dto.PurchaseApplicationRequestDTO;
+import com.trever.backend.api.trade.dto.PurchaseApplicationResponseDTO;
+import com.trever.backend.api.trade.entity.PurchaseApplication;
 import com.trever.backend.api.trade.entity.Transaction;
+import com.trever.backend.api.trade.repository.PurchaseRequestRepository;
 import com.trever.backend.api.trade.repository.TransactionRepository;
 import com.trever.backend.api.vehicle.entity.Vehicle;
 import com.trever.backend.api.vehicle.repository.VehicleRepository;
@@ -13,33 +17,56 @@ import com.trever.backend.common.response.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;
+    private final PurchaseRequestRepository purchaseRequestRepository;
     private final VehicleRepository vehicleRepository;
     private final AuctionRepository auctionRepository;
     private final BidRepository bidRepository;
     private final ContractService contractService;
 
-    // 일반 거래 생성
-    public Transaction createTransactionFromVehicle(Long buyerId, Long vehicleId) {
-        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+    // 구매 신청 (일반 거래)
+    public PurchaseApplication apply(PurchaseApplicationRequestDTO purchaseApplicationRequestDTO) {
+        PurchaseApplication request = PurchaseApplication.builder()
+                .buyerId(purchaseApplicationRequestDTO.getBuyerId())
+                .vehicleId(purchaseApplicationRequestDTO.getVehicleId())
+                .build();
+
+        return purchaseRequestRepository.save(request);
+    }
+
+    // 특정 차량의 구매 신청자 목록 조회
+    public List<PurchaseApplicationResponseDTO> getRequestsByVehicle(Long vehicleId) {
+        List<PurchaseApplication> requests = purchaseRequestRepository.findByVehicleId(vehicleId);
+
+        return requests.stream()
+                .map(PurchaseApplicationResponseDTO::from) // DTO 변환
+                .toList();
+    }
+
+    // 판매자가 구매자 선택 → 거래 생성
+    public Transaction selectBuyer(Long requestId) {
+        PurchaseApplication request = purchaseRequestRepository.findById(requestId)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.PURCHASE_REQUEST_NOT_FOUND.getMessage()));
+
+        Vehicle vehicle = vehicleRepository.findById(request.getVehicleId())
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.VEHICLE_NOT_FOUND.getMessage()));
 
-        Transaction tx = new Transaction();
-        tx.setBuyerId(buyerId);
-        tx.setSellerId(vehicle.getSellerId());
-        tx.setVehicleId(vehicleId);
-        tx.setFinalPrice(vehicle.getPrice());
-        tx.setStatus("PENDING");
+        Transaction tx = Transaction.builder()
+                .buyerId(request.getBuyerId())
+                .sellerId(vehicle.getSellerId())
+                .vehicleId(vehicle.getId())
+                .finalPrice(vehicle.getPrice())
+                .status("PENDING")
+                .build();
 
         Transaction saved = transactionRepository.save(tx);
-
-        // 거래와 연결된 계약 자동 생성
         contractService.createContract(saved);
-
         return saved;
     }
 

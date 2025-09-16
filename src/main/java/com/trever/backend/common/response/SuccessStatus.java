@@ -28,6 +28,8 @@ public enum SuccessStatus {
     TRANSACTION_GET_SUCCESS(HttpStatus.OK, "거래 조회 성공"),
     SEND_CONTRACT_PDF_SUCCESS(HttpStatus.OK, "계약서 PDF 조회 성공"),
     AUCTION_TRANSACTION_CREATE_SUCCESS(HttpStatus.OK, "경매 거래 생성 성공"),
+    PURCHASE_REQUEST_CREATE_SUCCESS(HttpStatus.OK, "구매 신청 성공"),
+    PURCHASE_REQUEST_LIST_SUCCESS(HttpStatus.OK, "구매 신청자 목록 조회 성공"),
 
     /**
      * 201

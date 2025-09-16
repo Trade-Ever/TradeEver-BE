@@ -1,6 +1,8 @@
 package com.trever.backend.api.trade.controller;
 
-import com.trever.backend.api.trade.dto.TransactionRequestDTO;
+import com.trever.backend.api.trade.dto.PurchaseApplicationRequestDTO;
+import com.trever.backend.api.trade.dto.PurchaseApplicationResponseDTO;
+import com.trever.backend.api.trade.entity.PurchaseApplication;
 import com.trever.backend.api.trade.entity.Transaction;
 import com.trever.backend.api.trade.service.TransactionService;
 import com.trever.backend.common.response.ApiResponse;
@@ -11,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/transactions")
 @RequiredArgsConstructor
@@ -19,12 +23,31 @@ public class TransactionController {
 
     private final TransactionService transactionService;
 
-    // 거래 생성
-    @Operation(summary = "일반 거래 생성 API", description = "차량 구매 시 거래를 생성합니다.")
-    @PostMapping
-    public ResponseEntity<ApiResponse<Transaction>> createTransaction(@RequestBody TransactionRequestDTO transactionRequestDTO) {
-        Transaction saved = transactionService.createTransactionFromVehicle(transactionRequestDTO.getBuyerId(), transactionRequestDTO.getVehicleId());
-        return ApiResponse.success(SuccessStatus.TRANSACTION_CREATE_SUCCESS, saved);
+    // 구매 신청
+    @Operation(summary = "구매 신청 API", description = "구매자가 차량에 구매 신청을 합니다.")
+    @PostMapping("/apply")
+    public ResponseEntity<ApiResponse<PurchaseApplicationResponseDTO>> apply(
+            @RequestBody PurchaseApplicationRequestDTO purchaseApplicationRequestDTO) {
+
+        PurchaseApplication saved = transactionService.apply(purchaseApplicationRequestDTO);
+
+        return ApiResponse.success(SuccessStatus.PURCHASE_REQUEST_CREATE_SUCCESS, PurchaseApplicationResponseDTO.from(saved));
+    }
+
+    // 구매 신청자 목록 조회
+    @Operation(summary = "구매 신청자 목록 조회 API", description = "차량에 등록된 구매 신청자들을 조회합니다.")
+    @GetMapping("/requests/{vehicleId}")
+    public ResponseEntity<ApiResponse<List<PurchaseApplicationResponseDTO>>> getRequests(@PathVariable Long vehicleId) {
+        List<PurchaseApplicationResponseDTO> requests = transactionService.getRequestsByVehicle(vehicleId);
+        return ApiResponse.success(SuccessStatus.PURCHASE_REQUEST_LIST_SUCCESS, requests);
+    }
+
+    // 판매자가 구매자 선택 → 거래 생성
+    @Operation(summary = "구매자 선택 API", description = "판매자가 구매자를 선택하여 거래를 확정합니다.")
+    @PostMapping("/requests/{requestId}/select")
+    public ResponseEntity<ApiResponse<Transaction>> selectBuyer(@PathVariable Long requestId) {
+        Transaction tx = transactionService.selectBuyer(requestId);
+        return ApiResponse.success(SuccessStatus.TRANSACTION_CREATE_SUCCESS, tx);
     }
 
     // 경매 거래 생성
