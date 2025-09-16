@@ -46,11 +46,11 @@ public class SwaggerConfig {
                 .info(new Info()
                         .title("Trever")
                         .description("Trever REST API Document")
-                        .version("1.0.0"));
+                        .version("1.0.0"))
 //                .components(new Components()
 //                        .addSecuritySchemes(accessTokenHeader, accessTokenScheme)
 //                        .addSecuritySchemes(refreshTokenHeader, refreshTokenScheme))
-//                .addServersItem(server)
+                .addServersItem(server);
 //                .addSecurityItem(accessTokenRequirement)
 //                .addSecurityItem(refreshTokenRequirement);
     }
