@@ -35,11 +35,15 @@ public enum ErrorStatus {
      * 404 NOT_FOUND
      */
     NOT_LOGIN_EXCEPTION(HttpStatus.NOT_FOUND,"로그인이 필요합니다."),
+    VEHICLE_NOT_FOUND(HttpStatus.NOT_FOUND, "차량을 찾을 수 없습니다."),
+    TRANSACTION_NOT_FOUND(HttpStatus.NOT_FOUND, "거래를 찾을 수 없습니다."),
+    CONTRACT_NOT_FOUND(HttpStatus.NOT_FOUND, "계약서를 찾을 수 없습니다."),
 
     /**
      * 500 SERVER_ERROR
      */
     PASSPORT_SIGN_ERROR_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR,"Passport 서명 검증 중 오류가 발생했습니다."),
+    CONTRACT_PDF_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "계약서 PDF 생성 중 오류가 발생했습니다."),
     ;
 
     private final HttpStatus httpStatus;
