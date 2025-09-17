@@ -10,6 +10,7 @@ import com.trever.backend.api.trade.entity.PurchaseApplication;
 import com.trever.backend.api.trade.entity.Transaction;
 import com.trever.backend.api.trade.repository.PurchaseRequestRepository;
 import com.trever.backend.api.trade.repository.TransactionRepository;
+import com.trever.backend.api.user.entity.User;
 import com.trever.backend.api.vehicle.entity.Vehicle;
 import com.trever.backend.api.vehicle.repository.VehicleRepository;
 import com.trever.backend.common.exception.NotFoundException;
@@ -59,7 +60,7 @@ public class TransactionService {
 
         Transaction tx = Transaction.builder()
                 .buyerId(request.getBuyerId())
-                .sellerId(vehicle.getSellerId())
+                .sellerId(vehicle.getSeller().getId())
                 .vehicleId(vehicle.getId())
                 .finalPrice(vehicle.getPrice())
                 .status("PENDING")
@@ -71,25 +72,23 @@ public class TransactionService {
     }
 
     // 경매 거래 생성
-    public Transaction createTransactionFromAuction(Long auctionId) {
+    public Transaction createTransactionFromAuction(Auction finishedauction, Bid winningBid, User buyer, User seller) {
         // 1. 경매 ID로 경매 조회
-        Auction auction = auctionRepository.findById(auctionId)
+        Auction auction = auctionRepository.findById(finishedauction.getId())
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_AUCTION.getMessage()));
 
         // 2. 해당 경매에서 최고가 입찰 조회
-        Bid highestBid = bidRepository.findTopByAuctionIdOrderByBidPriceDesc(auctionId)
-                .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_BID.getMessage()));
 
         // 3. 해당 경매의 차량 정보 조회
-        Vehicle vehicle = vehicleRepository.findById(auction.getVehicleId())
+        Vehicle vehicle = vehicleRepository.findById(auction.getVehicle().getId())
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_VEHICLE.getMessage()));
 
         // 4. Transaction 객체 생성
         Transaction tx = new Transaction();
-        tx.setBuyerId(highestBid.getBidderId()); // 최고가 입찰자
-        tx.setSellerId(vehicle.getSellerId());   // 차량 등록자(판매자)
+        tx.setBuyerId(winningBid.getId()); // 최고가 입찰자
+        tx.setSellerId(vehicle.getSeller().getId());   // 차량 등록자(판매자)
         tx.setVehicleId(vehicle.getId());
-        tx.setFinalPrice(highestBid.getBidPrice()); // 최종 거래가 = 낙찰가
+        tx.setFinalPrice(winningBid.getBidPrice()); // 최종 거래가 = 낙찰가
         tx.setStatus("PENDING");
 
         // 5. 거래 저장 후 계약 생성

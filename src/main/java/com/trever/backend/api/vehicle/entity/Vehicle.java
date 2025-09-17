@@ -1,52 +1,69 @@
 package com.trever.backend.api.vehicle.entity;
 
+import com.trever.backend.common.entity.BaseTimeEntity;
+import com.trever.backend.api.user.entity.User;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
-@Table(name = "vehicles")
 @Getter
 @Setter
-public class Vehicle {
-
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+@Table(name = "vehicles")
+public class Vehicle extends BaseTimeEntity {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    
+    private String carNumber;
 
-    @Column(nullable = false)
-    private Long sellerId; // 판매자 ID (users 테이블 FK)
+    private String description;
+    
+    private String manufacturer;
 
-    @Column(nullable = false)
-    private String title; // 매물 제목
+    private String carName;
 
-    private String manufacturer; // 제조사
-    private String model;        // 차량 모델
+    private String model;
+    
+    private Integer year_value;
+    
+    private Integer mileage;
+    
+    private String fuelType;
+    
+    private String transmission;
+    
+    private Character accidentHistory;
 
-    @Column(name = "car_year") // year → car_year 로 매핑
-    private Integer year;
+    private String accidentDescription;
+    
+    private String vehicleStatus;
+    
+    private Integer engineCc;
+    
+    private Integer horsepower;
+    
+    private String color;
 
-    private Integer mileage;     // 주행거리 (km)
+    private String additionalInfo;
+    
+    private Long price;
+    
+    private Character isAuction;
+    
+    private Long auctionId;
 
-    @Column(nullable = false)
-    private Long price; // 판매가
+    private String locationAddress;
+    
+    private Integer favoriteCount;
 
-    @Column(nullable = false)
-    private String vehicleStatus = "판매중"; // 판매중, 거래완료 등
-
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    public void prePersist() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
+    @Column(name = "representative_photo_url", length = 1000) // 대표 사진 URL 필드 추가
+    private String representativePhotoUrl;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_id", nullable = false)
+    private User seller;
 }

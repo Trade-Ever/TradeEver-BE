@@ -1,20 +1,30 @@
 package com.trever.backend.api.auction.entity;
 
 import com.trever.backend.common.entity.BaseTimeEntity;
+import com.trever.backend.api.user.entity.User;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
-@Table(name = "bids")
 @Getter
 @Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+@Table(name = "bids")
 public class Bid extends BaseTimeEntity {
-
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Long auctionId;
-    private Long bidderId; // 입찰자 (users.id)
-    private Long bidPrice; // 입찰가
+    
+    private Long bidPrice;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "bidder_id", nullable = false)
+    private User bidder;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "auction_id", nullable = false)
+    private Auction auction;
 }
