@@ -77,7 +77,7 @@
 <table>
     <tr>
         <th>차량명</th>
-        <td th:text="${vehicle.title}"></td>
+        <td th:text="${vehicle.carName}"></td>
         <th>제조사</th>
         <td th:text="${vehicle.manufacturer}"></td>
     </tr>
@@ -85,13 +85,13 @@
         <th>모델</th>
         <td th:text="${vehicle.model} + ' km'"></td>
         <th>연식</th>
-        <td th:text="${vehicle.year}"></td>
+        <td th:text="${vehicle.year_value}"></td>
     </tr>
     <tr>
         <th>차량 번호</th>
-<!--        <td th:text="${vehicle.carNumber}"></td>-->
+        <td th:text="${vehicle.carNumber}"></td>
         <th>색상</th>
-<!--        <td th:text="${vehicle.color}"></td>-->
+        <td th:text="${vehicle.color}"></td>
     </tr>
 </table>
 
