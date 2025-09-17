@@ -21,7 +21,11 @@ public enum SuccessStatus {
     BID_SUCESS(HttpStatus.OK,"입찰 성공"),
     AUCTION_CANCEL(HttpStatus.OK,"경매 취소"),
     CAR_INFO_SUCCESS(HttpStatus.OK, "차량 정보 조회 성공"),
-    CAR_HIERARCHY_SUCCESS(HttpStatus.OK, "차량 계층 구조 조회 성공")
+    CAR_HIERARCHY_SUCCESS(HttpStatus.OK, "차량 계층 구조 조회 성공"),
+    // SuccessStatus 열거형에 차량 관련 상태 추가
+    VEHICLE_CREATED(HttpStatus.OK, "차량 등록 성공"),
+    VEHICLE_READ(HttpStatus.OK, "차량 조회 성공"),
+    VEHICLE_DELETED(HttpStatus.OK, "차량 삭제 성공"),
 
     /**
      * 201
