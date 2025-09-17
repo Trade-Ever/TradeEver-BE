@@ -27,4 +27,11 @@ public class User extends BaseTimeEntity {
     private String name;
     
     private String phone;
+
+    private String refreshToken;
+
+    // 리프레시 토큰 업데이트
+    public void updateRefreshtoken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
 }
