@@ -1,14 +1,18 @@
 package com.trever.backend.common.config.swagger;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.core.jackson.ModelResolver;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.multipart.MultipartFile;
 
 @Configuration
 public class SwaggerConfig {
@@ -47,12 +51,22 @@ public class SwaggerConfig {
                         .title("Trever")
                         .description("Trever REST API Document")
                         .version("1.0.0"))
+                .components(new Components()
+                        .addSchemas("MultipartFile", new Schema<MultipartFile>()
+                                .type("string")
+                                .format("binary")))
 //                .components(new Components()
 //                        .addSecuritySchemes(accessTokenHeader, accessTokenScheme)
 //                        .addSecuritySchemes(refreshTokenHeader, refreshTokenScheme))
                 .addServersItem(server);
 //                .addSecurityItem(accessTokenRequirement)
 //                .addSecurityItem(refreshTokenRequirement);
+    }
+
+    // multipart 파일 업로드를 위한 추가 설정
+    @Bean
+    public ModelResolver modelResolver(ObjectMapper objectMapper) {
+        return new ModelResolver(objectMapper);
     }
 
 }
