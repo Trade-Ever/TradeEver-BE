@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>자동차 매매 계약서</title>
+    <style>
+        body {
+            font-family: 'NanumMyeongjo';
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 40px;
+            font-weight: 400;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .contract-meta {
+            text-align: right;
+            font-size: 10px;
+            margin-bottom: 15px;
+        }
+        h3 {
+            margin-top: 15px;
+            font-weight: 700;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 11px;
+        }
+        table, th, td {
+            border: 1px solid #000;
+        }
+        th {
+            background: #f5f5f5;
+            font-weight: 700;
+            text-align: center;
+        }
+        th, td {
+            padding: 6px;
+        }
+        .article {
+            margin-top: 10px;
+        }
+        .article h4 {
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+        .signature {
+            margin-top: 30px;
+        }
+        .signature-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        .signature-table td {
+            padding: 15px;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+<h1>자동차 매매 계약서</h1>
+<div class="contract-meta">
+    계약번호: <span th:text="${contract.id}"></span><br/>
+    작성 장소: 서울특별시 ...
+</div>
+
+<p>본 계약은 아래와 같이 차량 매매에 관한 사항을 합의하여 체결한다.</p>
+
+<h3>1. 차량 정보</h3>
+<table>
+    <tr>
+        <th>차량명</th>
+        <td th:text="${vehicle.title}"></td>
+        <th>제조사</th>
+        <td th:text="${vehicle.manufacturer}"></td>
+    </tr>
+    <tr>
+        <th>모델</th>
+        <td th:text="${vehicle.model} + ' km'"></td>
+        <th>연식</th>
+        <td th:text="${vehicle.year}"></td>
+    </tr>
+    <tr>
+        <th>차량 번호</th>
+<!--        <td th:text="${vehicle.carNumber}"></td>-->
+        <th>색상</th>
+<!--        <td th:text="${vehicle.color}"></td>-->
+    </tr>
+</table>
+
+<h3>2. 거래 조건</h3>
+<table>
+    <tr>
+        <th>거래 금액</th>
+        <td>
+            <span th:text="${#numbers.formatInteger(transaction.finalPrice, 3, 'COMMA')} + ' 원정'"></span>
+            (<span th:text="${T(com.trever.backend.common.util.MoneyUtil).toKorean(transaction.finalPrice)}"></span>)
+        </td>
+
+        <th>계약일자</th>
+        <td th:text="${#temporals.format(transaction.createdAt, 'yyyy년 MM월 dd일')}"></td>
+    </tr>
+</table>
+
+<h3>3. 당사자 정보</h3>
+<table>
+    <tr>
+        <th>구매자</th>
+<!--        <td th:text="${}"></td>-->
+        <th>판매자</th>
+<!--        <td th:text="${}"></td>-->
+    </tr>
+</table>
+
+<div class="article">
+    <h4>제1조 (계약의 목적)</h4>
+    <p>본 계약은 매도인이 매수인에게 위 차량을 매도하고, 매수인이 이를 매수함에 있어 필요한 제반 사항을 규정함을 목적으로 한다.</p>
+</div>
+
+<div class="article">
+    <h4>제2조 (소유권 이전)</h4>
+    <p>매도인은 계약 체결 후 정해진 기한 내에 차량 소유권 이전 등록에 필요한 모든 절차를 이행하여야 한다.</p>
+</div>
+
+<div class="article">
+    <h4>제3조 (계약 해제 및 해지)</h4>
+    <p>계약 당사자 중 일방이 본 계약을 위반하거나 계약 조건을 불이행할 경우, 상대방은 계약을 해제 또는 해지할 수 있다.</p>
+</div>
+
+<div class="article">
+    <h4>제4조 (하자 담보 책임)</h4>
+    <p>매도인은 차량 인도 후 발견된 중대한 하자에 대하여 「민법」 등 관련 법령에 따른 담보 책임을 부담한다.</p>
+</div>
+
+<div class="article">
+    <h4>제5조 (분쟁 해결)</h4>
+    <p>본 계약과 관련하여 분쟁이 발생할 경우, 당사자는 상호 협의하여 해결하며, 협의가 이루어지지 않을 경우 관할 법원은 매도인의 주소지를 관할하는 법원으로 한다.</p>
+</div>
+
+<div class="signature">
+    <table class="signature-table">
+        <tr>
+            <td>
+                <strong>구매자</strong><br/>
+                성명: ㅇㅇㅇ<br/>
+            </td>
+            <td>
+                <strong>판매자</strong><br/>
+                성명: ㅇㅇㅇ<br/>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<p style="text-align: right; margin-top: 50px;">
+    작성일: <span th:text="${#temporals.format(transaction.createdAt, 'yyyy년 MM월 dd일')}"></span>
+</p>
+</body>
+</html>
