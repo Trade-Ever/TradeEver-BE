@@ -21,7 +21,15 @@ public enum SuccessStatus {
     BID_SUCESS(HttpStatus.OK,"입찰 성공"),
     AUCTION_CANCEL(HttpStatus.OK,"경매 취소"),
     CAR_INFO_SUCCESS(HttpStatus.OK, "차량 정보 조회 성공"),
-    CAR_HIERARCHY_SUCCESS(HttpStatus.OK, "차량 계층 구조 조회 성공")
+    CAR_HIERARCHY_SUCCESS(HttpStatus.OK, "차량 계층 구조 조회 성공"),
+    SEND_CONTRACT_SUCCESS(HttpStatus.OK,"계약 조회 성공"),
+    SIGN_CONTRACT_SUCCESS(HttpStatus.OK,"계약 서명 성공"),
+    TRANSACTION_CREATE_SUCCESS(HttpStatus.OK, "거래 생성 성공"),
+    TRANSACTION_GET_SUCCESS(HttpStatus.OK, "거래 조회 성공"),
+    SEND_CONTRACT_PDF_SUCCESS(HttpStatus.OK, "계약서 PDF 조회 성공"),
+    AUCTION_TRANSACTION_CREATE_SUCCESS(HttpStatus.OK, "경매 거래 생성 성공"),
+    PURCHASE_REQUEST_CREATE_SUCCESS(HttpStatus.OK, "구매 신청 성공"),
+    PURCHASE_REQUEST_LIST_SUCCESS(HttpStatus.OK, "구매 신청자 목록 조회 성공"),
 
     /**
      * 201
