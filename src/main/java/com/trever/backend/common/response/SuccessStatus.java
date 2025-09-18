@@ -35,7 +35,7 @@ public enum SuccessStatus {
     PURCHASE_REQUEST_CREATE_SUCCESS(HttpStatus.OK, "구매 신청 성공"),
     PURCHASE_REQUEST_LIST_SUCCESS(HttpStatus.OK, "구매 신청자 목록 조회 성공"),
     CAR_OPTION_GET_SEUCESS(HttpStatus.OK, "차량 옵션 조회 성공"),
-    CAR_TYPE_GET_SEUCESS(HttpStatus.OK, "차종 조회 성공")
+    CAR_TYPE_GET_SEUCESS(HttpStatus.OK, "차종 조회 성공"),
     SEND_MEMBER_SUCCESS(HttpStatus.OK, "사용자 정보 조회 성공"),
 
 
