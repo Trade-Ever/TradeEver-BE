@@ -1,5 +1,6 @@
 package com.trever.backend.api.vehicle.dto;
 
+import com.trever.backend.api.vehicle.entity.VehicleType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,5 +41,10 @@ public class VehicleResponse {
     private Long sellerId;
     private String sellerName;
     private List<VehiclePhotoDto> photos; // 차량 사진 목록 추가
-    private String representativePhotoUrl;
+
+    // 차종 정보 추가
+    private String vehicleTypeName;
+
+    // 옵션 목록 추가
+    private List<String> options;
 }

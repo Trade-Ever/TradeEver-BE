@@ -42,10 +42,11 @@ public class VehicleController {
             
             Long vehicleId = vehicleService.createVehicle(request, photos, sellerId);
             return ApiResponse.success(SuccessStatus.VEHICLE_CREATED, vehicleId);
+
         } catch (JsonProcessingException e) {
             System.err.println("JSON 파싱 오류: " + e.getMessage());
             e.printStackTrace();
-            throw new RuntimeException("JSON 형식이 올바르지 않습니다: " + e.getMessage());
+            throw new RuntimeException("입력 형식이 올바르지 않습니다: " + e.getMessage());
         }
     }
     
