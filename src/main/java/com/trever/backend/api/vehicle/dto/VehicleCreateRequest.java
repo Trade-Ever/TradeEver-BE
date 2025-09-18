@@ -1,5 +1,6 @@
 package com.trever.backend.api.vehicle.dto;
 
+import com.trever.backend.api.vehicle.entity.VehicleType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -82,4 +83,10 @@ public class VehicleCreateRequest {
     private Long startPrice;
     private String startAt; // LocalDateTime으로 파싱
     private String endAt;   // LocalDateTime으로 파싱
+
+    // 차종 필드 추가
+    private VehicleType vehicleType;
+
+    // 옵션 목록 추가
+    private List<String> options;
 }

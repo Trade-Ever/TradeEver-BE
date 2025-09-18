@@ -37,6 +37,7 @@ public class VehicleService {
     private final UserRepository userRepository;
     private final AuctionService auctionService;
     private final VehiclePhotoService vehiclePhotoService; // 추가: VehiclePhotoService 의존성 주입
+    private final VehicleOptionService vehicleOptionService;
     
     /**
      * 새 차량 등록
@@ -46,7 +47,6 @@ public class VehicleService {
         // 사용자 조회
         User seller = userRepository.findById(sellerId)
                 .orElseThrow(() -> new NotFoundException("판매자를 찾을 수 없습니다: " + sellerId));
-        
         // 경매 여부에 따른 유효성 검증
         if (Boolean.TRUE.equals(request.getIsAuction())) {
             if (request.getPrice() != null) {
@@ -84,14 +84,20 @@ public class VehicleService {
                 .locationAddress(request.getLocationAddress())
                 .favoriteCount(0)
                 .seller(seller)
+                .vehicleType(request.getVehicleType())
                 .build();
                 
         // 차량 엔티티 저장
-        vehicle = vehicleRepository.save(vehicle);
+        Vehicle savedVehicle = vehicleRepository.save(vehicle);
         
         // 사진 업로드 및 저장
         if (photos != null && !photos.isEmpty()) {
             vehiclePhotoService.uploadAndSaveVehiclePhotos(vehicle, photos, request.getPhotoOrders());
+        }
+
+        // 옵션 설정
+        if (request.getOptions() != null && !request.getOptions().isEmpty()) {
+            vehicleOptionService.setVehicleOptions(savedVehicle, request.getOptions());
         }
         
         // 경매 등록이 필요한 경우
@@ -110,7 +116,7 @@ public class VehicleService {
             vehicleRepository.save(vehicle);
         }
         
-        return vehicle.getId();
+        return savedVehicle.getId();
     }
     
     /**
@@ -119,6 +125,26 @@ public class VehicleService {
     public VehicleResponse getVehicleDetail(Long vehicleId) {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new NotFoundException("차량을 찾을 수 없습니다."));
+
+        User user = userRepository.findById(vehicle.getSeller().getId())
+                .orElseThrow(() -> new NotFoundException("판매자를 찾을 수 없습니다."));
+
+        List<VehiclePhotoDto> photos = vehiclePhotoService.getVehiclePhotos(vehicle.getId()).stream()
+                .map(photo -> VehiclePhotoDto.builder()
+                        .id(photo.getId())
+                        .photoUrl(photo.getPhotoUrl())
+                        .orderIndex(photo.getOrderIndex())
+                        .build())
+                .collect(Collectors.toList());
+
+        // 차량 옵션 조회
+        List<String> options = vehicleOptionService.getVehicleOptionNames(vehicle);
+
+        // 경매 여부
+        Character isAuction = (vehicle.getVehicleType() != null) ? vehicle.getIsAuction() : 'N';
+
+        // 차량 타입이 null일 경우 처리
+        String vehicleTypeName = (vehicle.getVehicleType() != null) ? vehicle.getVehicleType().getDisplayName() : "미정";
 
         // VehicleResponse에 대표 사진 URL 포함
         return VehicleResponse.builder()
@@ -137,10 +163,16 @@ public class VehicleService {
                 .horsepower(vehicle.getHorsepower())
                 .color(vehicle.getColor())
                 .additionalInfo(vehicle.getAdditionalInfo())
-                .isAuction(vehicle.getIsAuction())
+                .isAuction(isAuction)
                 .price(vehicle.getPrice())
                 .locationAddress(vehicle.getLocationAddress())
-                .representativePhotoUrl(vehicle.getRepresentativePhotoUrl()) // 대표 사진 URL 추가
+                .vehicleTypeName(vehicleTypeName)
+                .options(options) // 옵션 목록 추가
+                .photos(photos)
+                .sellerId(user.getId())
+                .sellerName(user.getName())
+                .updatedAt(vehicle.getUpdatedAt())
+                .createdAt(vehicle.getCreatedAt())
                 .build();
     }
     
@@ -160,17 +192,18 @@ public class VehicleService {
         } else {
             vehiclesPage = vehicleRepository.findAll(pageable);
         }
-        
+
         List<VehicleListResponse.VehicleSummary> summaries = vehiclesPage.getContent().stream()
                 .map(this::buildVehicleSummary)
                 .collect(Collectors.toList());
-        
+
         return VehicleListResponse.builder()
                 .vehicles(summaries)
                 .totalCount((int) vehiclesPage.getTotalElements())
                 .pageNumber(page)
                 .pageSize(size)
                 .build();
+
     }
 
     
@@ -191,53 +224,23 @@ public class VehicleService {
         
         vehicleRepository.delete(vehicle);
     }
-    
-    // 유틸리티 메서드
-    
-    private VehicleResponse buildVehicleResponse(Vehicle vehicle) {
-        // 차량 사진 조회
-        List<VehiclePhotoDto> photos = vehiclePhotoService.getVehiclePhotos(vehicle.getId()).stream()
-                .map(photo -> VehiclePhotoDto.builder()
-                        .id(photo.getId())
-                        .photoUrl(photo.getPhotoUrl())
-                        .orderIndex(photo.getOrderIndex())
-                        .build())
-                .collect(Collectors.toList());
-        
-        return VehicleResponse.builder()
-                .id(vehicle.getId())
-                .carNumber(vehicle.getCarNumber())
-                .carName(vehicle.getCarName())
-                .description(vehicle.getDescription())
-                .manufacturer(vehicle.getManufacturer())
-                .model(vehicle.getModel())
-                .year_value(vehicle.getYear_value())
-                .mileage(vehicle.getMileage())
-                .fuelType(vehicle.getFuelType())
-                .transmission(vehicle.getTransmission())
-                .accidentHistory(vehicle.getAccidentHistory())
-                .accidentDescription(vehicle.getAccidentDescription())
-                .vehicleStatus(vehicle.getVehicleStatus())
-                .engineCc(vehicle.getEngineCc())
-                .horsepower(vehicle.getHorsepower())
-                .color(vehicle.getColor())
-                .additionalInfo(vehicle.getAdditionalInfo())
-                .price(vehicle.getPrice())
-                .isAuction(vehicle.getIsAuction())
-                .auctionId(vehicle.getAuctionId())
-                .locationAddress(vehicle.getLocationAddress())
-                .favoriteCount(vehicle.getFavoriteCount())
-                .createdAt(vehicle.getCreatedAt())
-                .updatedAt(vehicle.getUpdatedAt())
-                .sellerId(vehicle.getSeller().getId())
-                .sellerName(vehicle.getSeller().getName())
-                .photos(photos) // 사진 정보 추가
-                .build();
-    }
+
     
     private VehicleListResponse.VehicleSummary buildVehicleSummary(Vehicle vehicle) {
+
+        // 차량 옵션 조회
+        List<String> options = vehicleOptionService.getVehicleOptionNames(vehicle);
+
+        // 메인 옵션 (최대 3개까지)
+        List<String> mainOptions = options.size() > 3 ? options.subList(0, 3) : options;
+
+        // 차량 타입이 null일 경우 처리
+        String vehicleTypeName = (vehicle.getVehicleType() != null) ? vehicle.getVehicleType().getDisplayName() : "미정";
+
         return VehicleListResponse.VehicleSummary.builder()
                 .id(vehicle.getId())
+                .vehicleTypeName(vehicleTypeName)
+                .mainOptions(mainOptions)
                 .carNumber(vehicle.getCarNumber())
                 .carName(vehicle.getCarName())
                 .manufacturer(vehicle.getManufacturer())
@@ -253,6 +256,7 @@ public class VehicleService {
                 .locationAddress(vehicle.getLocationAddress())
                 .favoriteCount(vehicle.getFavoriteCount())
                 .createdAt(vehicle.getCreatedAt())
+                .totalOptionsCount(options.size())
                 .build();
     }
 }

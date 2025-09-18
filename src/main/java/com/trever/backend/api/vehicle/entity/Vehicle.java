@@ -5,6 +5,9 @@ import com.trever.backend.api.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Getter
 @Setter
@@ -59,6 +62,29 @@ public class Vehicle extends BaseTimeEntity {
     private String locationAddress;
     
     private Integer favoriteCount;
+
+    // 차종 필드 추가
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vehicle_type")
+    private VehicleType vehicleType;
+
+    // 옵션과의 매핑 관계 추가
+    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<VehicleOptionMapping> optionMappings = new ArrayList<>();
+
+    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<VehiclePhoto> photos = new ArrayList<>();
+
+    // 옵션 추가 편의 메서드
+    public void addOption(VehicleOption option) {
+        VehicleOptionMapping mapping = VehicleOptionMapping.builder()
+                .vehicle(this)
+                .option(option)
+                .build();
+        this.optionMappings.add(mapping);
+    }
 
     @Column(name = "representative_photo_url", length = 1000) // 대표 사진 URL 필드 추가
     private String representativePhotoUrl;

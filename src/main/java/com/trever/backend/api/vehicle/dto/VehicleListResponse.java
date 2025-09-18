@@ -1,5 +1,6 @@
 package com.trever.backend.api.vehicle.dto;
 
+import com.trever.backend.api.vehicle.entity.VehicleType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -39,5 +40,12 @@ public class VehicleListResponse {
         private String locationAddress;
         private Integer favoriteCount;
         private LocalDateTime createdAt;
+
+        // 차종 정보 추가
+        private String vehicleTypeName;
+
+        // 옵션 요약 (주요 옵션 3개 정도만 표시)
+        private List<String> mainOptions;
+        private Integer totalOptionsCount;
     }
 }
