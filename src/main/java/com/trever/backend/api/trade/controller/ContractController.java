@@ -24,35 +24,32 @@ public class ContractController {
 
     // 거래에 연결된 계약 조회
     @Operation(summary = "계약 조회 API", description = "계약을 조회합니다.")
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ContractResponseDTO>> getContract(@PathVariable Long id) {
-        Contract contract = contractService.getContract(id);
-        return ApiResponse.success(
-                SuccessStatus.SEND_CONTRACT_SUCCESS,
-                ContractResponseDTO.from(contract)
-        );
+    @GetMapping("/{contractId}")
+    public ResponseEntity<ApiResponse<ContractResponseDTO>> getContract(@PathVariable Long contractId) {
+
+        ContractResponseDTO contractResponseDTO = contractService.getContract(contractId);
+        return ApiResponse.success(SuccessStatus.SEND_CONTRACT_SUCCESS, contractResponseDTO);
     }
 
     // 구매자 서명
     @Operation(summary = "구매자 서명 API", description = "계약에 구매자가 서명합니다.")
-    @PostMapping("/{id}/sign/buyer")
-    public ResponseEntity<ApiResponse<ContractResponseDTO>> signAsBuyer(@PathVariable Long id) {
-        Contract contract = contractService.signAsBuyer(id);
-        return ApiResponse.success(
-                SuccessStatus.SIGN_CONTRACT_SUCCESS,
-                ContractResponseDTO.from(contract)
-        );
+    @PostMapping("/{contractId}/sign/buyer")
+    public ResponseEntity<ApiResponse<ContractResponseDTO>> signAsBuyer(
+            @PathVariable Long contractId,
+            @RequestParam Long userId) {
+
+        ContractResponseDTO contractResponseDTO = contractService.signAsBuyer(contractId, userId);
+        return ApiResponse.success(SuccessStatus.SIGN_CONTRACT_SUCCESS, contractResponseDTO);
     }
 
     // 판매자 서명
     @Operation(summary = "판매자 서명 API", description = "계약에 판매자가 서명합니다.")
-    @PostMapping("/{id}/sign/seller")
-    public ResponseEntity<ApiResponse<ContractResponseDTO>> signAsSeller(@PathVariable Long id) {
-        Contract contract = contractService.signAsSeller(id);
-        return ApiResponse.success(
-                SuccessStatus.SIGN_CONTRACT_SUCCESS,
-                ContractResponseDTO.from(contract)
-        );
+    @PostMapping("/{contractId}/sign/seller")
+    public ResponseEntity<ApiResponse<ContractResponseDTO>> signAsSeller(
+            @PathVariable Long contractId,
+            @RequestParam Long userId) {
+        ContractResponseDTO contractResponseDTO = contractService.signAsSeller(contractId, userId);
+        return ApiResponse.success(SuccessStatus.SIGN_CONTRACT_SUCCESS, contractResponseDTO);
     }
 
 //    // 계약서 pdf url 조희

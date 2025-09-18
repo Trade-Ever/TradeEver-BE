@@ -1,5 +1,7 @@
 package com.trever.backend.api.trade.entity;
 
+import com.trever.backend.api.user.entity.User;
+import com.trever.backend.api.vehicle.entity.Vehicle;
 import com.trever.backend.common.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -19,14 +21,25 @@ public class Transaction extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long buyerId;
-    private Long sellerId;
-    private Long vehicleId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "buyer_id", nullable = false)
+    private User buyer;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_id", nullable = false)
+    private User seller;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vehicle_id", nullable = false, unique = true)
+    private Vehicle vehicle;
 
     private Long finalPrice;
 
-    private String status;  // PENDING, COMPLETED
+    @Enumerated(EnumType.STRING)
+    private TransactionStatus status;
 
     private LocalDateTime completedAt;
+
+    @OneToOne(mappedBy = "transaction", cascade = CascadeType.ALL)
+    private Contract contract;
 }

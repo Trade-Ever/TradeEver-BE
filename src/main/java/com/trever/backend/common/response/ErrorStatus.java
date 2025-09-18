@@ -18,6 +18,10 @@ public enum ErrorStatus {
     NOT_MATCHED_LOGIN_USER_EXCEPTION(HttpStatus.BAD_REQUEST, "아이디 또는 비밀번호가 일치하지 않습니다."),
     NOT_REGISTER_USER_EXCEPTION(HttpStatus.BAD_REQUEST, "존재하지 않는 사용자 입니다."),
     PASSWORD_MISMATCH_EXCEPTION(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
+    INVALID_SELLER_SELECTION(HttpStatus.BAD_REQUEST, "판매자만 구매자를 선택할 수 있습니다."),
+    INVALID_BUYER_SIGNATURE(HttpStatus.BAD_REQUEST, "구매자만 서명할 수 있습니다."),
+    INVALID_SELLER_SIGNATURE(HttpStatus.BAD_REQUEST, "판매자만 서명할 수 있습니다."),
+
 
     /**
      * 401 UNAUTHORIZED
@@ -38,12 +42,14 @@ public enum ErrorStatus {
     NOT_LOGIN_EXCEPTION(HttpStatus.NOT_FOUND,"로그인이 필요합니다."),
     VEHICLE_NOT_FOUND(HttpStatus.NOT_FOUND, "차량을 찾을 수 없습니다."),
     TRANSACTION_NOT_FOUND(HttpStatus.NOT_FOUND, "거래를 찾을 수 없습니다."),
-    CONTRACT_NOT_FOUND(HttpStatus.NOT_FOUND, "계약서를 찾을 수 없습니다."),
+    NOT_FOUND_CONTRACT_EXCEPTION(HttpStatus.NOT_FOUND, "계약을 찾을 수 없습니다."),
+    NOT_FOUND_TRANSACTION_EXCEPTION(HttpStatus.NOT_FOUND, "거래를 찾을 수 없습니다."),
     NOT_FOUND_AUCTION(HttpStatus.NOT_FOUND, "경매를 찾을 수 없습니다."),
     NOT_FOUND_BID(HttpStatus.NOT_FOUND, "입찰 내역이 없습니다."),
     NOT_FOUND_VEHICLE(HttpStatus.NOT_FOUND, "차량을 찾을 수 없습니다."),
     PURCHASE_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "구매 신청을 찾을 수 없습니다."),
-    NOT_FOUND_USER_EXCEPTION(HttpStatus.NOT_FOUND, "존재하지 않는 사용자 입니다."),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자 입니다."),
+    USER_PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자 프로필을 찾을 수 없습니다."),
 
     /**
      * 500 SERVER_ERROR

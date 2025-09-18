@@ -65,7 +65,7 @@ public class UserService {
     public UserLoginResponseDTO login(UserLoginRequestDTO userLoginRequestDTO) {
 
         User user = userRepository.findByEmail(userLoginRequestDTO.getEmail())
-                .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_USER_EXCEPTION.getMessage()));
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
         // 비밀번호 검증
         if (!passwordEncoder.matches(userLoginRequestDTO.getPassword(), user.getPassword())) {
@@ -129,10 +129,10 @@ public class UserService {
     @Transactional
     public UserResponseDTO getMyInfo(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_USER_EXCEPTION.getMessage()));
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
         UserProfile profile = userProfileRepository.findByUser(user)
-                .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_USER_EXCEPTION.getMessage()));
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
         return UserResponseDTO.from(user, profile);
     }
