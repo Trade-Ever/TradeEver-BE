@@ -68,7 +68,7 @@
 <h1>자동차 매매 계약서</h1>
 <div class="contract-meta">
     계약번호: <span th:text="${contract.id}"></span><br/>
-    작성 장소: 서울특별시 ...
+    작성 장소: 서울특별시
 </div>
 
 <p>본 계약은 아래와 같이 차량 매매에 관한 사항을 합의하여 체결한다.</p>
@@ -83,15 +83,21 @@
     </tr>
     <tr>
         <th>모델</th>
-        <td th:text="${vehicle.model} + ' km'"></td>
+        <td th:text="${vehicle.model}"></td>
         <th>연식</th>
         <td th:text="${vehicle.year_value}"></td>
     </tr>
     <tr>
         <th>차량 번호</th>
         <td th:text="${vehicle.carNumber}"></td>
+        <th>주행거리</th>
+        <td th:text="${vehicle.mileage} + 'km'"></td>
+    </tr>
+    <tr>
         <th>색상</th>
         <td th:text="${vehicle.color}"></td>
+        <th>연료</th>
+        <td th:text="${vehicle.fuelType}"></td>
     </tr>
 </table>
 
@@ -112,10 +118,28 @@
 <h3>3. 당사자 정보</h3>
 <table>
     <tr>
+        <th>구분</th>
+        <th>성명</th>
+        <th>생년월일</th>
+        <th>전화번호</th>
+        <th>이메일</th>
+        <th>거주지</th>
+    </tr>
+    <tr>
         <th>구매자</th>
-<!--        <td th:text="${}"></td>-->
+        <td th:text="${transaction.buyer.name}"></td>
+        <td th:text="${buyerProfile.birthDate}"></td>
+        <td th:text="${transaction.buyer.phone}"></td>
+        <td th:text="${transaction.buyer.email}"></td>
+        <td th:text="${buyerProfile.locationCity}"></td>
+    </tr>
+    <tr>
         <th>판매자</th>
-<!--        <td th:text="${}"></td>-->
+        <td th:text="${transaction.seller.name}"></td>
+        <td th:text="${sellerProfile.birthDate}"></td>
+        <td th:text="${transaction.seller.phone}"></td>
+        <td th:text="${transaction.seller.email}"></td>
+        <td th:text="${sellerProfile.locationCity}"></td>
     </tr>
 </table>
 
@@ -149,11 +173,11 @@
         <tr>
             <td>
                 <strong>구매자</strong><br/>
-                성명: ㅇㅇㅇ<br/>
+                성명: <span th:text="${transaction.buyer.name}"></span><br/>
             </td>
             <td>
                 <strong>판매자</strong><br/>
-                성명: ㅇㅇㅇ<br/>
+                성명: <span th:text="${transaction.seller.name}"></span><br/>
             </td>
         </tr>
     </table>

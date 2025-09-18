@@ -1,5 +1,7 @@
 package com.trever.backend.api.trade.entity;
 
+import com.trever.backend.api.user.entity.User;
+import com.trever.backend.api.vehicle.entity.Vehicle;
 import com.trever.backend.common.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -17,11 +19,11 @@ public class PurchaseApplication extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long vehicleId;   // 신청한 차량 ID
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "buyer_id", nullable = false)
+    private User buyer;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "buyer_id", nullable = false)
-//    private User buyer;
-
-    private Long buyerId;     // 신청자 (구매자) ID
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vehicle_id", nullable = false)
+    private Vehicle vehicle;
 }
