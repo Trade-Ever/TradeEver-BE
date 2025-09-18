@@ -267,7 +267,7 @@ public class AuctionService {
                     User seller = auction.getVehicle().getSeller();
                     
                     // Transaction 엔티티를 생성하고 저장하
-                    transactionService.createTransactionFromAuction(auction, winningBid, buyer, seller);
+                    transactionService.createTransactionFromAuction(auction.getId());
                     
                     // TODO: 판매자 지갑에 낙찰 금액 입금 로직 추가 (수수료 차감 후)
                     // userWalletService.deposit(seller.getId(), calculateSellerProfit(winningBid.getBidPrice()));

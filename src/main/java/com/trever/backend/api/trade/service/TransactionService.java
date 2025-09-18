@@ -103,30 +103,37 @@ public class TransactionService {
     }
 
     // 경매 거래 생성
-//    public Transaction createTransactionFromAuction(Auction finishedauction, Bid winningBid, User buyer, User seller) {
-//        // 1. 경매 ID로 경매 조회
-//        Auction auction = auctionRepository.findById(finishedauction.getId())
-//                .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_AUCTION.getMessage()));
-//
-//        // 2. 해당 경매에서 최고가 입찰 조회
-//
-//        // 3. 해당 경매의 차량 정보 조회
-//        Vehicle vehicle = vehicleRepository.findById(auction.getVehicle().getId())
-//                .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_VEHICLE.getMessage()));
-//
-//        // 4. Transaction 객체 생성
-//        Transaction tx = new Transaction();
-//        tx.setBuyerId(winningBid.getId()); // 최고가 입찰자
-//        tx.setSellerId(vehicle.getSeller().getId());   // 차량 등록자(판매자)
-//        tx.setVehicleId(vehicle.getId());
-//        tx.setFinalPrice(winningBid.getBidPrice()); // 최종 거래가 = 낙찰가
-//        tx.setStatus("PENDING");
-//
-//        // 5. 거래 저장 후 계약 생성
-//        Transaction saved = transactionRepository.save(tx);
-//        contractService.createContract(saved);
-//        return saved;
-//    }
+    public TransactionResponseDTO createTransactionFromAuction(Long auctionId) {
+        // 1. 경매 ID로 경매 조회
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_AUCTION.getMessage()));
+
+        // 2. 해당 경매에서 최고가 입찰 조회
+        Bid winningBid = bidRepository.findHighestBidByAuctionId(auctionId)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_BID.getMessage()));
+
+        User buyer = winningBid.getBidder();
+        User seller = auction.getVehicle().getSeller();
+
+        // 3. 해당 경매의 차량 정보 조회
+        Vehicle vehicle = vehicleRepository.findById(auction.getVehicle().getId())
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_VEHICLE.getMessage()));
+
+        // 4. Transaction 객체 생성
+        Transaction transaction = Transaction.builder()
+                .vehicle(vehicle)
+                .buyer(buyer)
+                .seller(seller)
+                .finalPrice(winningBid.getBidPrice())
+                .status(IN_PROGRESS)
+                .build();
+
+        // 5. 거래 저장 후 계약 생성
+        Transaction saved = transactionRepository.save(transaction);
+        contractService.createContract(saved.getId());
+
+        return TransactionResponseDTO.from(saved);
+    }
 
     // 거래 조회
     @Transactional
