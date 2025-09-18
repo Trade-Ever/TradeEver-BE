@@ -7,16 +7,21 @@ import lombok.Getter;
 @Getter
 @Builder
 public class PurchaseApplicationResponseDTO {
-    private Long id;
+    private Long id;  // 신청 id
     private Long buyerId;
     private Long vehicleId;
+    private String buyerName;
+    private String vehicleName;
+    private String createdAt;
 
     public static PurchaseApplicationResponseDTO from(PurchaseApplication application) {
         return PurchaseApplicationResponseDTO.builder()
                 .id(application.getId())
-                .buyerId(application.getBuyerId())
-                .vehicleId(application.getVehicleId())
-//                .buyerName(application.getBuyer().getName()) // User 매핑에서 바로 꺼냄
+                .buyerId(application.getBuyer().getId())
+                .vehicleId(application.getVehicle().getId())
+                .buyerName(application.getBuyer().getName())
+                .vehicleName(application.getVehicle().getCarName())
+                .createdAt(application.getCreatedAt().toString())
                 .build();
     }
 }

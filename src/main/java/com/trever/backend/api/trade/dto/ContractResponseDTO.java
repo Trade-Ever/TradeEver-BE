@@ -11,8 +11,10 @@ import java.time.LocalDateTime;
 @Builder
 public class ContractResponseDTO {
 
-    private Long id;
+    private Long contractId;  // 계약 id
     private Long transactionId;
+    private String buyerName;
+    private String sellerName;
 
     // 계약 상태 정보
     private boolean signedByBuyer;
@@ -25,8 +27,10 @@ public class ContractResponseDTO {
     // 정적 팩토리 메서드
     public static ContractResponseDTO from(Contract contract) {
         return ContractResponseDTO.builder()
-                .id(contract.getId())
+                .contractId(contract.getId())
                 .transactionId(contract.getTransaction().getId())
+                .buyerName(contract.getTransaction().getBuyer().getName())
+                .sellerName(contract.getTransaction().getBuyer().getName())
                 .signedByBuyer(contract.isSignedByBuyer())
                 .signedBySeller(contract.isSignedBySeller())
                 .signedAt(contract.getSignedAt())
