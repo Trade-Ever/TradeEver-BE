@@ -5,6 +5,8 @@ import com.trever.backend.api.trade.entity.Contract;
 import com.trever.backend.api.trade.entity.Transaction;
 import com.trever.backend.api.trade.repository.ContractRepository;
 import com.trever.backend.api.trade.repository.TransactionRepository;
+import com.trever.backend.api.user.entity.UserProfile;
+import com.trever.backend.api.user.repository.UserProfileRepository;
 import com.trever.backend.api.vehicle.entity.Vehicle;
 import com.trever.backend.api.vehicle.repository.VehicleRepository;
 import com.trever.backend.common.exception.BadRequestException;
@@ -33,6 +35,7 @@ public class ContractService {
     private final TransactionRepository transactionRepository;
     private final VehicleRepository vehicleRepository;
     private final SpringTemplateEngine templateEngine;
+    private final UserProfileRepository userProfileRepository;
 
     // 계약 생성 (거래 확정 시 자동 생성)
     @Transactional
@@ -111,11 +114,19 @@ public class ContractService {
                 throw new NotFoundException(ErrorStatus.VEHICLE_NOT_FOUND.getMessage());
             }
 
+            // 구매자, 판매자 프로필 정보 조회
+            UserProfile buyerProfile = userProfileRepository.findByUser(transaction.getBuyer())
+                    .orElse(null);
+            UserProfile sellerProfile = userProfileRepository.findByUser(transaction.getSeller())
+                    .orElse(null);
+
             // 계약서 HTML 생성
             Context context = new Context();
             context.setVariable("transaction", transaction);
             context.setVariable("vehicle", vehicle);
             context.setVariable("contract", contract);
+            context.setVariable("buyerProfile", buyerProfile);
+            context.setVariable("sellerProfile", sellerProfile);
 
             String htmlContent = templateEngine.process("contract", context);
             contract.setContractData(htmlContent);
@@ -132,8 +143,8 @@ public class ContractService {
                 Files.deleteIfExists(Paths.get(filePath));
                 PdfGenerator.generatePdfFromHtml(htmlContent, filePath);
 
-                // URL 저장 (정적 리소스 매핑 기준)
-                contract.setContractPdfUrl("/contracts/" + fileName);
+                // URL 저장
+                contract.setContractPdfUrl("uploads/contracts/" + fileName);
             } catch (Exception e) {
                 throw new InternalServerException(ErrorStatus.PASSPORT_SIGN_ERROR_EXCEPTION.getMessage());
             }
