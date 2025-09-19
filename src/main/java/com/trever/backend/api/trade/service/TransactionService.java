@@ -133,8 +133,6 @@ public class TransactionService {
                 .status(IN_PROGRESS)
                 .build();
 
-        vehicleRepository.updateVehicleStatus(vehicle.getId(),VehicleStatus.IN_PROGRESS);
-
         // 5. 거래 저장 후 계약 생성
         Transaction saved = transactionRepository.save(transaction);
         contractService.createContract(saved.getId());

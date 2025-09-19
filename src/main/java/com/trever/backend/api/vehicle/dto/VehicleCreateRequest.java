@@ -66,16 +66,11 @@ public class VehicleCreateRequest {
     @NotBlank(message = "색상은 필수입니다")
     private String color;
     
-    private String additionalInfo; // null 가능
-    
     @NotNull(message = "경매 여부는 필수입니다")
     private Boolean isAuction; // true면 Y, false면 N으로 변환
     
     // isAuction이 false(N)인 경우에만 필수
     private Long price; // isAuction이 true면 null
-    
-    @NotBlank(message = "위치 주소는 필수입니다")
-    private String locationAddress;
 
         // 이미지 파일들은 컨트롤러에서 별도로 처리
     @Size(max = 5, message = "차량 사진은 최대 5개까지 등록 가능합니다")

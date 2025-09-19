@@ -64,6 +64,17 @@ public class VehicleService {
                 throw new BadRequestException("판매로 등록할 경우 가격은 필수입니다.");
             }
         }
+
+        // isAuction에 따라 vehicleStatus 자동 설정
+        VehicleStatus status;
+        if (request.getVehicleStatus() != null) {
+            // 요청에 상태가 있으면 그대로 사용
+            status = request.getVehicleStatus();
+        } else {
+            // 요청에 상태가 없으면 isAuction에 따라 자동 설정
+            status = Boolean.TRUE.equals(request.getIsAuction()) ?
+                    VehicleStatus.AUCTIONS : VehicleStatus.ACTIVE;
+        }
         
         // 차량 엔티티 생성
         Vehicle vehicle = Vehicle.builder()
@@ -78,14 +89,12 @@ public class VehicleService {
                 .transmission(request.getTransmission())
                 .accidentHistory(Boolean.TRUE.equals(request.getAccidentHistory()) ? 'Y' : 'N')
                 .accidentDescription(Boolean.TRUE.equals(request.getAccidentHistory()) ? request.getAccidentDescription() : null)
-                .vehicleStatus(request.getVehicleStatus() != null ? request.getVehicleStatus() : VehicleStatus.ACTIVE)
+                .vehicleStatus(status)
                 .engineCc(request.getEngineCc())
                 .horsepower(request.getHorsepower())
                 .color(request.getColor())
-                .additionalInfo(request.getAdditionalInfo())
                 .price(Boolean.FALSE.equals(request.getIsAuction()) ? request.getPrice() : null)
                 .isAuction(Boolean.TRUE.equals(request.getIsAuction()) ? 'Y' : 'N')
-                .locationAddress(request.getLocationAddress())
                 .favoriteCount(0)
                 .seller(seller)
                 .vehicleType(request.getVehicleType())
@@ -168,10 +177,8 @@ public class VehicleService {
                 .engineCc(vehicle.getEngineCc())
                 .horsepower(vehicle.getHorsepower())
                 .color(vehicle.getColor())
-                .additionalInfo(vehicle.getAdditionalInfo())
                 .isAuction(isAuction)
                 .price(vehicle.getPrice())
-                .locationAddress(vehicle.getLocationAddress())
                 .vehicleTypeName(vehicleTypeName)
                 .options(options) // 옵션 목록 추가
                 .photos(photos)
@@ -188,11 +195,11 @@ public class VehicleService {
     public VehicleListResponse getVehicles(int page, int size, String sortBy, Boolean isAuction) {
         Sort sort = Sort.by(Sort.Direction.DESC, sortBy != null ? sortBy : "createdAt");
         Pageable pageable = PageRequest.of(page, size, sort);
-        
+
         Page<Vehicle> vehiclesPage;
         if (isAuction != null) {
             vehiclesPage = vehicleRepository.findByIsAuction(
-                    isAuction ? 'Y' : 'N', 
+                    isAuction ? 'Y' : 'N',
                     pageable
             );
         } else {
@@ -295,7 +302,6 @@ public class VehicleService {
                 .isAuction(vehicle.getIsAuction())
                 .auctionId(vehicle.getAuctionId())
                 .representativePhotoUrl(vehicle.getRepresentativePhotoUrl())
-                .locationAddress(vehicle.getLocationAddress())
                 .favoriteCount(vehicle.getFavoriteCount())
                 .createdAt(vehicle.getCreatedAt())
                 .totalOptionsCount(options.size())

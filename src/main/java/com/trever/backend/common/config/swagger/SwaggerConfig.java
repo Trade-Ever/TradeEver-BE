@@ -43,11 +43,20 @@ public class SwaggerConfig {
         SecurityRequirement accessTokenRequirement = new SecurityRequirement().addList(accessTokenHeader);
         SecurityRequirement refreshTokenRequirement = new SecurityRequirement().addList(refreshTokenHeader);
 
-        Server server = new Server();
-//        //배포용
-//        server.setUrl("http://54.180.107.111:8080");
         //로컬용
-        server.setUrl("http://localhost:8080");
+        Server localServer = new Server()
+                .url("http://localhost:8080")
+                .description("로컬 개발 서버");
+
+        //배포용 1
+        Server prodServer1 = new Server()
+                .url("https://www.trever.store")
+                .description("배포 서버");
+
+        //배포용 2
+        Server prodServer2 = new Server()
+                .url("http://54.180.107.111:8080")
+                .description("배포 서버");
 
         Components components = new Components()
                 .addSchemas("MultipartFile", new Schema<MultipartFile>()
@@ -62,7 +71,9 @@ public class SwaggerConfig {
                         .description("Trever REST API Document")
                         .version("1.0.0"))
                 .components(components)
-                .addServersItem(server)
+                .addServersItem(localServer)
+                .addServersItem(prodServer1)
+                .addServersItem(prodServer2)
                 .addSecurityItem(accessTokenRequirement)
                 .addSecurityItem(refreshTokenRequirement);
     }
