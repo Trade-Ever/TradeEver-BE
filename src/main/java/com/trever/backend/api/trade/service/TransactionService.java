@@ -65,7 +65,15 @@ public class TransactionService {
 
     // 특정 차량의 구매 신청자 목록 조회 (판매자가 보는 화면)
     @Transactional
-    public List<PurchaseApplicationResponseDTO> getRequestsByVehicle(Long vehicleId) {
+    public List<PurchaseApplicationResponseDTO> getRequestsByVehicle(Long vehicleId, Long sellerId) {
+        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.VEHICLE_NOT_FOUND.getMessage()));
+
+        // 판매자 검증
+        if (!vehicle.getSeller().getId().equals(sellerId)) {
+            throw new BadRequestException(ErrorStatus.INVALID_SELLER_SELECTION.getMessage());
+        }
+
         List<PurchaseApplication> requests = purchaseRequestRepository.findByVehicleId(vehicleId);
 
         if (requests.isEmpty()) {
@@ -149,9 +157,15 @@ public class TransactionService {
 
     // 거래 조회
     @Transactional
-    public TransactionResponseDTO getTransaction(Long id) {
+    public TransactionResponseDTO getTransaction(Long id, Long loginUserId) {
         Transaction transaction = transactionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.TRANSACTION_NOT_FOUND.getMessage()));
+
+        // 권한 검증
+        if (!transaction.getBuyer().getId().equals(loginUserId) &&
+                !transaction.getSeller().getId().equals(loginUserId)) {
+            throw new BadRequestException("해당 거래에 접근 권한이 없습니다.");
+        }
 
         return TransactionResponseDTO.from(transaction);
     }

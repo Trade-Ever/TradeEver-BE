@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -51,8 +53,8 @@ public class UserController {
     // 사용자 정보
     @Operation(summary = "사용자 정보 조회 API", description = "사용자 정보를 조회합니다.")
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<MyPageResponseDTO>> getMemberInfo(Authentication authentication) {
-        String email = authentication.getName();
+    public ResponseEntity<ApiResponse<MyPageResponseDTO>> getMemberInfo(@AuthenticationPrincipal UserDetails userDetails) {
+        String email = userDetails.getUsername();
         MyPageResponseDTO myPageResponseDTO = userService.getMyInfo(email);
 
         return ApiResponse.success(SuccessStatus.SEND_MEMBER_SUCCESS, myPageResponseDTO);
