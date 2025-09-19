@@ -53,16 +53,12 @@ public class Vehicle extends BaseTimeEntity {
     private Integer horsepower;
     
     private String color;
-
-    private String additionalInfo;
     
     private Long price;
     
     private Character isAuction;
     
     private Long auctionId;
-
-    private String locationAddress;
     
     private Integer favoriteCount;
 

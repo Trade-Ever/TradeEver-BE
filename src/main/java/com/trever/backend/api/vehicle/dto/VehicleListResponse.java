@@ -38,8 +38,7 @@ public class VehicleListResponse {
         private Long price;
         private Character isAuction;
         private Long auctionId;
-        private String representativePhotoUrl; 
-        private String locationAddress;
+        private String representativePhotoUrl;
         private Integer favoriteCount;
         private LocalDateTime createdAt;
 

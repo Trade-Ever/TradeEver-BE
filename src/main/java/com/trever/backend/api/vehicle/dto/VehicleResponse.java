@@ -30,12 +30,10 @@ public class VehicleResponse {
     private Integer engineCc;
     private Integer horsepower;
     private String color;
-    private String additionalInfo;
     private Long price;
     private Character isAuction;
     private String vehicleStatus;
     private Long auctionId;
-    private String locationAddress;
     private Integer favoriteCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
