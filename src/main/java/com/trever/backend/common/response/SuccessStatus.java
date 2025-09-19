@@ -35,6 +35,12 @@ public enum SuccessStatus {
     PURCHASE_REQUEST_CREATE_SUCCESS(HttpStatus.OK, "구매 신청 성공"),
     PURCHASE_REQUEST_LIST_SUCCESS(HttpStatus.OK, "구매 신청자 목록 조회 성공"),
     SEND_MEMBER_SUCCESS(HttpStatus.OK, "사용자 정보 조회 성공"),
+    GET_FAVORITE_SUCCESS(HttpStatus.OK, "찜 목록 조회 성공"),
+    REMOVE_FAVORITE_SUCCESS(HttpStatus.OK, "찜 취소 성공"),
+    ADD_FAVORITE_SUCCESS(HttpStatus.OK, "찜 추가 성공"),
+    GET_BALANCE_SUCCESS(HttpStatus.OK, "지갑 잔액 조회 성공"),
+    DEPOSIT_SUCCESS(HttpStatus.CREATED, "충전 성공"),
+    WITHDRAW_SUCCESS(HttpStatus.OK, "출금 성공"),
 
 
     /**
