@@ -2,7 +2,9 @@ package com.trever.backend.api.vehicle.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.trever.backend.api.vehicle.entity.VehicleStatus;
 import com.trever.backend.common.response.ApiResponse;
+import com.trever.backend.common.response.ErrorStatus;
 import com.trever.backend.common.response.SuccessStatus;
 import com.trever.backend.api.vehicle.dto.VehicleCreateRequest;
 import com.trever.backend.api.vehicle.dto.VehicleListResponse;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @Tag(name = "Vehicle", description = "차량 관리 API")
@@ -82,4 +85,22 @@ public class VehicleController {
         vehicleService.deleteVehicle(vehicleId, userId);
         return ApiResponse.success_only(SuccessStatus.CAR_INFO_SUCCESS);
     }
+
+//    @PatchMapping("/{vehicleId}/status")
+//    @Operation(summary = "차량 상태 변경", description = "차량의 판매 상태를 변경합니다.")
+//    public ResponseEntity<ApiResponse<String>> updateVehicleStatus(
+//            @PathVariable Long vehicleId,
+//            @RequestParam String stauts) {
+//
+//        VehicleStatus changeStatus = VehicleStatus.valueOf(stauts);
+//
+//        vehicleService.updateVehicleStatus(vehicleId, changeStatus);
+//        return ApiResponse.success(SuccessStatus.CAR_TYPE_GET_SEUCESS, "차량 상태가 변경되었습니다.");
+//    }
+//
+//    @GetMapping("/status")
+//    @Operation(summary = "차량 상태 목록 조회", description = "사용 가능한 차량 상태 목록을 조회합니다.")
+//    public ResponseEntity<ApiResponse<VehicleStatus[]>> getVehicleStatuses() {
+//        return ApiResponse.success(SuccessStatus.BID_SUCESS, VehicleStatus.values());
+//    }
 }

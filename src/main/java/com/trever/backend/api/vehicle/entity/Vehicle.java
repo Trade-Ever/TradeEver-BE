@@ -42,8 +42,11 @@ public class Vehicle extends BaseTimeEntity {
     private Character accidentHistory;
 
     private String accidentDescription;
-    
-    private String vehicleStatus;
+
+    // String -> VehicleStatus 열거형으로 변경
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vehicle_status")
+    private VehicleStatus vehicleStatus;
     
     private Integer engineCc;
     

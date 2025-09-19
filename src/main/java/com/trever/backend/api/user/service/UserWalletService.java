@@ -57,6 +57,20 @@ public class UserWalletService {
             return false;
         }
     }
+
+    @Transactional
+    public UserWallet createUserWallet(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다: " + userId));
+
+        UserWallet newWallet = UserWallet.builder()
+                .user(user)
+                .balance(0L)  // 초기 잔액 0으로 세팅
+                .build();
+
+        return walletRepository.save(newWallet);
+    }
+
     
     private UserWallet getOrCreateWallet(Long userId) {
         return walletRepository.findByUserId(userId)

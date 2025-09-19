@@ -1,5 +1,6 @@
 package com.trever.backend.api.vehicle.dto;
 
+import com.trever.backend.api.vehicle.entity.VehicleStatus;
 import com.trever.backend.api.vehicle.entity.VehicleType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -51,9 +52,10 @@ public class VehicleCreateRequest {
     private Boolean accidentHistory; // true면 Y, false면 N으로 변환
     
     private String accidentDescription; // accidentHistory가 false(N)면 null 가능
-    
+
     @NotBlank(message = "차량 상태는 필수입니다")
-    private String vehicleStatus;
+    // String -> VehicleStatus 열거형으로 변경
+    private VehicleStatus vehicleStatus;
     
     @Positive(message = "배기량은 양수여야 합니다")
     private Integer engineCc;
@@ -77,6 +79,7 @@ public class VehicleCreateRequest {
 
         // 이미지 파일들은 컨트롤러에서 별도로 처리
     @Size(max = 5, message = "차량 사진은 최대 5개까지 등록 가능합니다")
+    @Builder.Default
     private List<Integer> photoOrders = new ArrayList<>(); // 이미지 순서 정보
     
     // 경매 관련 정보 (isAuction이 true인 경우에만 필요)
