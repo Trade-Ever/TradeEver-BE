@@ -13,6 +13,7 @@ import com.trever.backend.api.trade.repository.PurchaseRequestRepository;
 import com.trever.backend.api.trade.repository.TransactionRepository;
 import com.trever.backend.api.user.entity.User;
 import com.trever.backend.api.user.repository.UserRepository;
+import com.trever.backend.api.user.service.UserWalletService;
 import com.trever.backend.api.vehicle.entity.Vehicle;
 import com.trever.backend.api.vehicle.repository.VehicleRepository;
 import com.trever.backend.common.exception.BadRequestException;
@@ -37,6 +38,7 @@ public class TransactionService {
     private final BidRepository bidRepository;
     private final ContractService contractService;
     private final UserRepository userRepository;
+    private final UserWalletService userWalletService;
 
     // 구매 신청 (일반 거래)
     @Transactional
@@ -46,6 +48,11 @@ public class TransactionService {
 
         User buyer = userRepository.findById(buyerId)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
+        // 지갑 잔액 확인
+        if (!userWalletService.hasSufficientFunds(buyerId, vehicle.getPrice())) {
+            throw new BadRequestException("잔액이 부족합니다.");
+        }
 
         PurchaseApplication request = PurchaseApplication.builder()
                 .buyer(buyer)
@@ -85,6 +92,11 @@ public class TransactionService {
         // 구매자 조회
         User buyer = userRepository.findById(buyerId)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
+        // 지갑 잔액 확인
+        if (!userWalletService.hasSufficientFunds(buyerId, vehicle.getPrice())) {
+            throw new BadRequestException("구매자의 잔액이 부족합니다.");
+        }
 
         // 거래 생성
         Transaction transaction = Transaction.builder()

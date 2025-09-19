@@ -51,11 +51,11 @@ public class UserController {
     // 사용자 정보
     @Operation(summary = "사용자 정보 조회 API", description = "사용자 정보를 조회합니다.")
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<UserResponseDTO>> getMemberInfo(Authentication authentication) {
+    public ResponseEntity<ApiResponse<MyPageResponseDTO>> getMemberInfo(Authentication authentication) {
         String email = authentication.getName();
-        UserResponseDTO userResponseDTO = userService.getMyInfo(email);
+        MyPageResponseDTO myPageResponseDTO = userService.getMyInfo(email);
 
-        return ApiResponse.success(SuccessStatus.SEND_MEMBER_SUCCESS, userResponseDTO);
+        return ApiResponse.success(SuccessStatus.SEND_MEMBER_SUCCESS, myPageResponseDTO);
     }
 
 
