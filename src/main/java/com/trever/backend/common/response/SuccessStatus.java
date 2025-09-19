@@ -34,6 +34,8 @@ public enum SuccessStatus {
     AUCTION_TRANSACTION_CREATE_SUCCESS(HttpStatus.OK, "경매 거래 생성 성공"),
     PURCHASE_REQUEST_CREATE_SUCCESS(HttpStatus.OK, "구매 신청 성공"),
     PURCHASE_REQUEST_LIST_SUCCESS(HttpStatus.OK, "구매 신청자 목록 조회 성공"),
+    CAR_OPTION_GET_SEUCESS(HttpStatus.OK, "차량 옵션 조회 성공"),
+    CAR_TYPE_GET_SEUCESS(HttpStatus.OK, "차종 조회 성공"),
     SEND_MEMBER_SUCCESS(HttpStatus.OK, "사용자 정보 조회 성공"),
     GET_FAVORITE_SUCCESS(HttpStatus.OK, "찜 목록 조회 성공"),
     REMOVE_FAVORITE_SUCCESS(HttpStatus.OK, "찜 취소 성공"),
@@ -44,6 +46,7 @@ public enum SuccessStatus {
     UPDATE_PROFILE_SUCCESS(HttpStatus.OK, "프로필 수정 성공"),
     RECENT_VIEW_ADD_SUCCESS(HttpStatus.OK, "최근 본 차량 추가 성공"),
     RECENT_VIEW_LIST_SUCCESS(HttpStatus.OK, "최근 본 차량 조회 성공"),
+
 
 
     /**

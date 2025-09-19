@@ -14,8 +14,11 @@ import com.trever.backend.api.trade.repository.TransactionRepository;
 import com.trever.backend.api.user.entity.User;
 import com.trever.backend.api.user.repository.UserRepository;
 import com.trever.backend.api.user.service.UserWalletService;
+import com.trever.backend.api.user.service.UserService;
 import com.trever.backend.api.vehicle.entity.Vehicle;
+import com.trever.backend.api.vehicle.entity.VehicleStatus;
 import com.trever.backend.api.vehicle.repository.VehicleRepository;
+import com.trever.backend.api.vehicle.service.VehicleService;
 import com.trever.backend.common.exception.BadRequestException;
 import com.trever.backend.common.exception.NotFoundException;
 import com.trever.backend.common.response.ErrorStatus;
@@ -114,6 +117,8 @@ public class TransactionService {
                 .finalPrice(vehicle.getPrice())
                 .status(IN_PROGRESS)
                 .build();
+
+        vehicleRepository.updateVehicleStatus(vehicle.getId(),VehicleStatus.IN_PROGRESS);
 
         Transaction savedTransaction = transactionRepository.save(transaction);
 

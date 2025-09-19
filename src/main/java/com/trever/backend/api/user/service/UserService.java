@@ -29,6 +29,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserWalletService userWalletService;
     private final JwtProvider jwtProvider;
     private final UserWalletRepository userWalletRepository;
 
@@ -56,6 +57,9 @@ public class UserService {
         // UserProfile 저장
         UserProfile profile = userSignupRequestDTO.toProfileEntity(savedUser);
         userProfileRepository.save(profile);
+
+        //UserWallet 생성
+        userWalletService.createUserWallet(user.getId());
 
         return UserResponseDTO.from(savedUser);
     }
