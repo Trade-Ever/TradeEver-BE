@@ -7,8 +7,11 @@ import com.trever.backend.api.trade.repository.ContractRepository;
 import com.trever.backend.api.trade.repository.TransactionRepository;
 import com.trever.backend.api.user.entity.UserProfile;
 import com.trever.backend.api.user.repository.UserProfileRepository;
+import com.trever.backend.api.user.service.UserService;
 import com.trever.backend.api.vehicle.entity.Vehicle;
+import com.trever.backend.api.vehicle.entity.VehicleStatus;
 import com.trever.backend.api.vehicle.repository.VehicleRepository;
+import com.trever.backend.api.vehicle.service.VehicleService;
 import com.trever.backend.common.exception.BadRequestException;
 import com.trever.backend.common.exception.InternalServerException;
 import com.trever.backend.common.exception.NotFoundException;
@@ -33,9 +36,9 @@ public class ContractService {
 
     private final ContractRepository contractRepository;
     private final TransactionRepository transactionRepository;
-    private final VehicleRepository vehicleRepository;
     private final SpringTemplateEngine templateEngine;
     private final UserProfileRepository userProfileRepository;
+    private final VehicleRepository vehicleRepository;
 
     // 계약 생성 (거래 확정 시 자동 생성)
     @Transactional
@@ -150,6 +153,7 @@ public class ContractService {
             }
 
             // Transaction 상태 업데이트
+            vehicleRepository.updateVehicleStatus(vehicle.getId(),VehicleStatus.ENDED);
             transaction.setStatus(COMPLETED);
             transaction.setCompletedAt(LocalDateTime.now());
             transactionRepository.save(transaction);

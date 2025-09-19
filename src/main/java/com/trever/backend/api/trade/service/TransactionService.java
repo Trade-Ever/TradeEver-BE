@@ -13,8 +13,11 @@ import com.trever.backend.api.trade.repository.PurchaseRequestRepository;
 import com.trever.backend.api.trade.repository.TransactionRepository;
 import com.trever.backend.api.user.entity.User;
 import com.trever.backend.api.user.repository.UserRepository;
+import com.trever.backend.api.user.service.UserService;
 import com.trever.backend.api.vehicle.entity.Vehicle;
+import com.trever.backend.api.vehicle.entity.VehicleStatus;
 import com.trever.backend.api.vehicle.repository.VehicleRepository;
+import com.trever.backend.api.vehicle.service.VehicleService;
 import com.trever.backend.common.exception.BadRequestException;
 import com.trever.backend.common.exception.NotFoundException;
 import com.trever.backend.common.response.ErrorStatus;
@@ -95,6 +98,8 @@ public class TransactionService {
                 .status(IN_PROGRESS)
                 .build();
 
+        vehicleRepository.updateVehicleStatus(vehicle.getId(),VehicleStatus.IN_PROGRESS);
+
         Transaction savedTransaction = transactionRepository.save(transaction);
 
         // 계약 생성
@@ -127,6 +132,8 @@ public class TransactionService {
                 .finalPrice(winningBid.getBidPrice())
                 .status(IN_PROGRESS)
                 .build();
+
+        vehicleRepository.updateVehicleStatus(vehicle.getId(),VehicleStatus.IN_PROGRESS);
 
         // 5. 거래 저장 후 계약 생성
         Transaction saved = transactionRepository.save(transaction);

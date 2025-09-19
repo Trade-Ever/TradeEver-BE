@@ -1,5 +1,6 @@
 package com.trever.backend.api.vehicle.dto;
 
+import com.trever.backend.api.vehicle.entity.VehicleStatus;
 import com.trever.backend.api.vehicle.entity.VehicleType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,13 +27,13 @@ public class VehicleResponse {
     private String transmission;
     private Character accidentHistory;
     private String accidentDescription;
-    private String vehicleStatus;
     private Integer engineCc;
     private Integer horsepower;
     private String color;
     private String additionalInfo;
     private Long price;
     private Character isAuction;
+    private String vehicleStatus;
     private Long auctionId;
     private String locationAddress;
     private Integer favoriteCount;

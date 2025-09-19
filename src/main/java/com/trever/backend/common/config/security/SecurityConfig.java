@@ -80,6 +80,8 @@ public class SecurityConfig {
                                 "/api/**"
                         ).permitAll()
 
+
+
                         // 나머지 요청은 인증 필요
                         .anyRequest().authenticated()
                 )

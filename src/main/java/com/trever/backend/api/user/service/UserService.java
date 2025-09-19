@@ -4,6 +4,7 @@ import com.trever.backend.api.jwt.JwtProvider;
 import com.trever.backend.api.user.dto.*;
 import com.trever.backend.api.user.entity.User;
 import com.trever.backend.api.user.entity.UserProfile;
+import com.trever.backend.api.user.entity.UserWallet;
 import com.trever.backend.api.user.repository.UserProfileRepository;
 import com.trever.backend.api.user.repository.UserRepository;
 import com.trever.backend.common.exception.BadRequestException;
@@ -30,6 +31,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserWalletService userWalletService;
     private final JwtProvider jwtProvider;
 
     // 회원가입
@@ -56,6 +58,9 @@ public class UserService {
         // UserProfile 저장
         UserProfile profile = userSignupRequestDTO.toProfileEntity(savedUser);
         userProfileRepository.save(profile);
+
+        //UserWallet 생성
+        userWalletService.createUserWallet(user.getId());
 
         return UserResponseDTO.from(savedUser, profile);
     }

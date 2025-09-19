@@ -2,6 +2,7 @@ package com.trever.backend.api.vehicle.service;
 
 import com.trever.backend.api.auction.dto.AuctionCreateRequest;
 import com.trever.backend.api.auction.service.AuctionService;
+import com.trever.backend.api.vehicle.entity.VehicleStatus;
 import com.trever.backend.common.exception.BadRequestException;
 import com.trever.backend.common.exception.NotFoundException;
 import com.trever.backend.api.user.entity.User;
@@ -22,10 +23,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.stream.Collectors;
+
 
 @Slf4j
 @Service
@@ -74,7 +78,7 @@ public class VehicleService {
                 .transmission(request.getTransmission())
                 .accidentHistory(Boolean.TRUE.equals(request.getAccidentHistory()) ? 'Y' : 'N')
                 .accidentDescription(Boolean.TRUE.equals(request.getAccidentHistory()) ? request.getAccidentDescription() : null)
-                .vehicleStatus(request.getVehicleStatus())
+                .vehicleStatus(request.getVehicleStatus() != null ? request.getVehicleStatus() : VehicleStatus.ACTIVE)
                 .engineCc(request.getEngineCc())
                 .horsepower(request.getHorsepower())
                 .color(request.getColor())
@@ -102,12 +106,14 @@ public class VehicleService {
         
         // 경매 등록이 필요한 경우
         if (Boolean.TRUE.equals(request.getIsAuction())) {
-            DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
-            
+            LocalDateTime startAt = parseDateTime(request.getStartAt(),true); // 시작일은 00:00:00
+            LocalDateTime endAt = parseDateTime(request.getEndAt(), false);   // 종료일은 23:59:59
+
+
             AuctionCreateRequest auctionRequest = AuctionCreateRequest.builder()
                     .startPrice(request.getStartPrice())
-                    .startAt(LocalDateTime.parse(request.getStartAt(), formatter))
-                    .endAt(LocalDateTime.parse(request.getEndAt(), formatter))
+                    .startAt(startAt)
+                    .endAt(endAt)
                     .vehicleId(vehicle.getId())
                     .build();
             
@@ -158,7 +164,7 @@ public class VehicleService {
                 .transmission(vehicle.getTransmission())
                 .accidentHistory(vehicle.getAccidentHistory())
                 .accidentDescription(vehicle.getAccidentDescription())
-                .vehicleStatus(vehicle.getVehicleStatus())
+                .vehicleStatus(vehicle.getVehicleStatus().getDisplayName())
                 .engineCc(vehicle.getEngineCc())
                 .horsepower(vehicle.getHorsepower())
                 .color(vehicle.getColor())
@@ -225,6 +231,41 @@ public class VehicleService {
         vehicleRepository.delete(vehicle);
     }
 
+    // 유틸리티
+
+//    // 차량 상태 변경
+//    @Transactional
+//    public void updateVehicleStatus(Long vehicleId, VehicleStatus status) {
+//        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+//                .orElseThrow(() -> new NotFoundException("차량을 찾을 수 없습니다."));
+//
+//        vehicle.setVehicleStatus(status);
+//        vehicleRepository.save(vehicle);
+//    }
+
+    //시간 파싱
+
+    private LocalDateTime parseDateTime(String dateString, boolean isStartDate) {
+        try {
+            // 정확한 ISO-8601 형식인 경우 그대로 파싱
+            if (dateString.contains("T") && dateString.length() > 10) {
+                return LocalDateTime.parse(dateString);
+            }
+
+            // 날짜만 있는 경우 (yyyy-MM-dd)
+            LocalDate date = LocalDate.parse(dateString);
+            if (isStartDate) {
+                // 시작일은 해당 날짜의 00:00:00
+                return date.atStartOfDay();
+            } else {
+                // 종료일은 해당 날짜의 23:59:59
+                return date.atTime(LocalTime.of(23, 59, 59));
+            }
+        } catch (DateTimeParseException e) {
+            throw new BadRequestException("날짜 형식이 올바르지 않습니다: " + dateString);
+        }
+    }
+
     
     private VehicleListResponse.VehicleSummary buildVehicleSummary(Vehicle vehicle) {
 
@@ -250,6 +291,7 @@ public class VehicleService {
                 .transmission(vehicle.getTransmission())
                 .fuelType(vehicle.getFuelType())
                 .price(vehicle.getPrice())
+                .vehicleStatus(vehicle.getVehicleStatus().getDisplayName())
                 .isAuction(vehicle.getIsAuction())
                 .auctionId(vehicle.getAuctionId())
                 .representativePhotoUrl(vehicle.getRepresentativePhotoUrl())

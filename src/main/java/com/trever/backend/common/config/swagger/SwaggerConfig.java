@@ -44,6 +44,9 @@ public class SwaggerConfig {
         SecurityRequirement refreshTokenRequirement = new SecurityRequirement().addList(refreshTokenHeader);
 
         Server server = new Server();
+//        //배포용
+//        server.setUrl("http://54.180.107.111:8080");
+        //로컬용
         server.setUrl("http://localhost:8080");
 
         Components components = new Components()

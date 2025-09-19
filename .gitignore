@@ -35,6 +35,7 @@ out/
 *.properties
 *.json
 Dockerfile
+*.csv
 
 ### VS Code ###
 .vscode/
