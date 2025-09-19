@@ -42,6 +42,8 @@ public enum SuccessStatus {
     DEPOSIT_SUCCESS(HttpStatus.CREATED, "충전 성공"),
     WITHDRAW_SUCCESS(HttpStatus.OK, "출금 성공"),
     UPDATE_PROFILE_SUCCESS(HttpStatus.OK, "프로필 수정 성공"),
+    RECENT_VIEW_ADD_SUCCESS(HttpStatus.OK, "최근 본 차량 추가 성공"),
+    RECENT_VIEW_LIST_SUCCESS(HttpStatus.OK, "최근 본 차량 조회 성공"),
 
 
     /**

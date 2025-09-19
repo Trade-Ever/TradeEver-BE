@@ -2,6 +2,7 @@ package com.trever.backend.api.vehicle.service;
 
 import com.trever.backend.api.auction.dto.AuctionCreateRequest;
 import com.trever.backend.api.auction.service.AuctionService;
+import com.trever.backend.api.recentview.service.RecentViewService;
 import com.trever.backend.common.exception.BadRequestException;
 import com.trever.backend.common.exception.NotFoundException;
 import com.trever.backend.api.user.entity.User;
@@ -37,7 +38,8 @@ public class VehicleService {
     private final UserRepository userRepository;
     private final AuctionService auctionService;
     private final VehiclePhotoService vehiclePhotoService; // 추가: VehiclePhotoService 의존성 주입
-    
+    private final RecentViewService recentViewService;
+
     /**
      * 새 차량 등록
      */
@@ -116,9 +118,12 @@ public class VehicleService {
     /**
      * 차량 상세 조회
      */
-    public VehicleResponse getVehicleDetail(Long vehicleId) {
+    public VehicleResponse getVehicleDetail(Long vehicleId, Long userId) {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new NotFoundException("차량을 찾을 수 없습니다."));
+
+        // 최근 본 차량에 추가
+        recentViewService.addRecentView(userId, vehicleId);
 
         // VehicleResponse에 대표 사진 URL 포함
         return VehicleResponse.builder()

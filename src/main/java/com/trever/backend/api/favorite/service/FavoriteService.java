@@ -1,9 +1,8 @@
 package com.trever.backend.api.favorite.service;
 
-import com.trever.backend.api.auction.repository.AuctionRepository;
-import com.trever.backend.api.favorite.dto.FavoriteResponseDTO;
 import com.trever.backend.api.favorite.entity.Favorite;
 import com.trever.backend.api.favorite.repository.FavoriteRepository;
+import com.trever.backend.api.vehicle.dto.VehicleListResponse;
 import com.trever.backend.api.vehicle.entity.Vehicle;
 import com.trever.backend.api.vehicle.repository.VehicleRepository;
 import com.trever.backend.common.exception.NotFoundException;
@@ -20,38 +19,36 @@ import java.util.List;
 public class FavoriteService {
 
     private final FavoriteRepository favoriteRepository;
-    private final AuctionRepository auctionRepository;
     private final VehicleRepository vehicleRepository;
 
     // 찜 목록 조회
-    public List<FavoriteResponseDTO> getFavorites(Long userId) {
-        List<Favorite> favorites = favoriteRepository.findByUserId(userId);
+    public List<VehicleListResponse.VehicleSummary> getFavorites(Long userId) {
+        return favoriteRepository.findByUserIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(fav -> {
+                    Vehicle v = vehicleRepository.findById(fav.getVehicleId())
+                            .orElseThrow(() -> new NotFoundException(ErrorStatus.VEHICLE_NOT_FOUND.getMessage()));
 
-        return favorites.stream().map(fav -> {
-            Vehicle v = vehicleRepository.findById(fav.getVehicleId())
-                    .orElseThrow(() -> new NotFoundException(ErrorStatus.VEHICLE_NOT_FOUND.getMessage()));
-
-            // 기본 Vehicle 정보
-            var builder = FavoriteResponseDTO.builder()
-                    .favoriteId(fav.getId())
-                    .createdAt(fav.getCreatedAt())
-                    .vehicleId(v.getId())
-                    .carName(v.getCarName())
-                    .manufacturer(v.getManufacturer())
-                    .yearValue(v.getYear_value())
-                    .mileage(v.getMileage())
-                    .price(v.getPrice())
-                    .representativePhotoUrl(v.getRepresentativePhotoUrl())
-                    .isAuction(v.getIsAuction() != null && v.getIsAuction() == 'Y');
-
-            // 경매 차량이면 Auction 종료일 추가
-            if (v.getIsAuction() != null && v.getIsAuction() == 'Y') {
-                auctionRepository.findByVehicleId(v.getId())
-                        .ifPresent(auction -> builder.auctionEndAt(auction.getEndAt()));
-            }
-
-            return builder.build();
-        }).toList();
+                    return VehicleListResponse.VehicleSummary.builder()
+                            .id(v.getId())
+                            .carNumber(v.getCarNumber())
+                            .carName(v.getCarName())
+                            .manufacturer(v.getManufacturer())
+                            .model(v.getModel())
+                            .year_value(v.getYear_value())
+                            .mileage(v.getMileage())
+                            .transmission(v.getTransmission())
+                            .fuelType(v.getFuelType())
+                            .price(v.getPrice())
+                            .isAuction(v.getIsAuction())
+                            .auctionId(v.getAuctionId())
+                            .representativePhotoUrl(v.getRepresentativePhotoUrl())
+                            .locationAddress(v.getLocationAddress())
+                            .favoriteCount(v.getFavoriteCount())
+                            .createdAt(v.getCreatedAt())
+                            .build();
+                })
+                .toList();
     }
 
     // 찜 추가
