@@ -6,12 +6,18 @@ import com.trever.backend.api.trade.dto.TransactionResponseDTO;
 import com.trever.backend.api.trade.entity.PurchaseApplication;
 import com.trever.backend.api.trade.entity.Transaction;
 import com.trever.backend.api.trade.service.TransactionService;
+import com.trever.backend.api.user.entity.User;
+import com.trever.backend.api.user.repository.UserRepository;
+import com.trever.backend.common.exception.NotFoundException;
 import com.trever.backend.common.response.ApiResponse;
+import com.trever.backend.common.response.ErrorStatus;
 import com.trever.backend.common.response.SuccessStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,23 +29,35 @@ import java.util.List;
 public class TransactionController {
 
     private final TransactionService transactionService;
+    private final UserRepository userRepository;
 
     // 구매 신청
     @Operation(summary = "구매 신청 API", description = "구매자가 차량에 구매 신청을 합니다.")
     @PostMapping("/apply/{vehicleId}")
     public ResponseEntity<ApiResponse<PurchaseApplicationResponseDTO>> apply(
             @PathVariable Long vehicleId,
-            @RequestParam Long buyerId) {
+            @AuthenticationPrincipal UserDetails userDetails) {
 
-        PurchaseApplicationResponseDTO response = transactionService.apply(vehicleId, buyerId);
+        String email = userDetails.getUsername(); // JWT에서 꺼낸 email
+        User buyer = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
+        PurchaseApplicationResponseDTO response = transactionService.apply(vehicleId, buyer.getId());
         return ApiResponse.success(SuccessStatus.PURCHASE_REQUEST_CREATE_SUCCESS, response);
     }
 
     // 구매 신청자 목록 조회
     @Operation(summary = "구매 신청자 목록 조회 API", description = "차량에 등록된 구매 신청자들을 조회합니다.")
     @GetMapping("/requests/{vehicleId}")
-    public ResponseEntity<ApiResponse<List<PurchaseApplicationResponseDTO>>> getRequests(@PathVariable Long vehicleId) {
-        List<PurchaseApplicationResponseDTO> requests = transactionService.getRequestsByVehicle(vehicleId);
+    public ResponseEntity<ApiResponse<List<PurchaseApplicationResponseDTO>>> getRequests(
+            @PathVariable Long vehicleId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String email = userDetails.getUsername();
+        User seller = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
+        List<PurchaseApplicationResponseDTO> requests = transactionService.getRequestsByVehicle(vehicleId, seller.getId());
         return ApiResponse.success(SuccessStatus.PURCHASE_REQUEST_LIST_SUCCESS, requests);
     }
 
@@ -48,10 +66,14 @@ public class TransactionController {
     @PostMapping("/select/{vehicleId}")
     public ResponseEntity<ApiResponse<TransactionResponseDTO>> selectBuyer(
             @PathVariable Long vehicleId,
-            @RequestParam Long sellerId,
+            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam Long buyerId) {
 
-        TransactionResponseDTO response = transactionService.selectBuyer(vehicleId, sellerId, buyerId);
+        String email = userDetails.getUsername();
+        User seller = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
+        TransactionResponseDTO response = transactionService.selectBuyer(vehicleId, seller.getId(), buyerId);
         return ApiResponse.success(SuccessStatus.TRANSACTION_CREATE_SUCCESS, response);
     }
 
@@ -67,8 +89,15 @@ public class TransactionController {
     @Operation(summary = "거래 조회 API", description = "거래 ID로 거래를 조회합니다.")
     @GetMapping("/{transactionId}")
     public ResponseEntity<ApiResponse<TransactionResponseDTO>> getTransaction(
-            @PathVariable Long transactionId) {
-        TransactionResponseDTO transactionResponseDTO = transactionService.getTransaction(transactionId);
+            @PathVariable Long transactionId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String email = userDetails.getUsername();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
+        TransactionResponseDTO transactionResponseDTO = transactionService.getTransaction(transactionId, user.getId());
+
         return ApiResponse.success(SuccessStatus.TRANSACTION_GET_SUCCESS, transactionResponseDTO);
     }
 }

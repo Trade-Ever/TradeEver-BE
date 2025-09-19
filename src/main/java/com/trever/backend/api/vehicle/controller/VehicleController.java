@@ -2,6 +2,11 @@ package com.trever.backend.api.vehicle.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.trever.backend.api.recentview.service.RecentViewService;
+import com.trever.backend.api.user.entity.User;
+import com.trever.backend.api.user.repository.UserRepository;
+import com.trever.backend.api.user.service.UserService;
+import com.trever.backend.common.exception.NotFoundException;
 import com.trever.backend.api.vehicle.entity.VehicleStatus;
 import com.trever.backend.common.response.ApiResponse;
 import com.trever.backend.common.response.ErrorStatus;
@@ -15,6 +20,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,6 +36,8 @@ public class VehicleController {
 
     private final VehicleService vehicleService;
     private final ObjectMapper objectMapper;
+    private final UserRepository userRepository;
+    private final RecentViewService recentViewService;
     
     @Operation(summary = "차량 등록", description = "새로운 차량을 등록합니다.")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -56,9 +65,17 @@ public class VehicleController {
     @Operation(summary = "차량 상세 조회", description = "차량 상세 정보를 조회합니다.")
     @GetMapping("/{vehicleId}")
     public ResponseEntity<ApiResponse<VehicleResponse>> getVehicleDetail(
-            @PathVariable Long vehicleId) {
-        
-        VehicleResponse vehicle = vehicleService.getVehicleDetail(vehicleId);
+            @PathVariable Long vehicleId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String email = userDetails.getUsername();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
+        // 최근 본 차량 자동 추가
+        recentViewService.addRecentView(user.getId(), vehicleId);
+
+        VehicleResponse vehicle = vehicleService.getVehicleDetail(vehicleId, user.getId());
         return ApiResponse.success(SuccessStatus.CAR_INFO_SUCCESS, vehicle);
     }
     

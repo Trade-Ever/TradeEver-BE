@@ -5,6 +5,9 @@ import com.trever.backend.api.trade.entity.Contract;
 import com.trever.backend.api.trade.entity.Transaction;
 import com.trever.backend.api.trade.repository.ContractRepository;
 import com.trever.backend.api.trade.service.ContractService;
+import com.trever.backend.api.user.entity.User;
+import com.trever.backend.api.user.repository.UserRepository;
+import com.trever.backend.api.user.service.UserService;
 import com.trever.backend.common.exception.BadRequestException;
 import com.trever.backend.common.exception.NotFoundException;
 import com.trever.backend.common.response.ApiResponse;
@@ -20,6 +23,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -35,6 +40,7 @@ public class ContractController {
 
     private final ContractService contractService;
     private final ContractRepository contractRepository;
+    private final UserRepository userRepository;
 
     // 거래에 연결된 계약 조회
     @Operation(summary = "계약 조회 API", description = "계약을 조회합니다.")
@@ -50,9 +56,13 @@ public class ContractController {
     @PostMapping("/{contractId}/sign/buyer")
     public ResponseEntity<ApiResponse<ContractResponseDTO>> signAsBuyer(
             @PathVariable Long contractId,
-            @RequestParam Long userId) {
+            @AuthenticationPrincipal UserDetails userDetails) {
 
-        ContractResponseDTO contractResponseDTO = contractService.signAsBuyer(contractId, userId);
+        String email = userDetails.getUsername();
+        User buyer = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
+        ContractResponseDTO contractResponseDTO = contractService.signAsBuyer(contractId, buyer.getId());
         return ApiResponse.success(SuccessStatus.SIGN_CONTRACT_SUCCESS, contractResponseDTO);
     }
 
@@ -61,8 +71,13 @@ public class ContractController {
     @PostMapping("/{contractId}/sign/seller")
     public ResponseEntity<ApiResponse<ContractResponseDTO>> signAsSeller(
             @PathVariable Long contractId,
-            @RequestParam Long userId) {
-        ContractResponseDTO contractResponseDTO = contractService.signAsSeller(contractId, userId);
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String email = userDetails.getUsername();
+        User seller = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
+        ContractResponseDTO contractResponseDTO = contractService.signAsSeller(contractId, seller.getId());
         return ApiResponse.success(SuccessStatus.SIGN_CONTRACT_SUCCESS, contractResponseDTO);
     }
 
@@ -71,7 +86,11 @@ public class ContractController {
     @GetMapping("/{contractId}/pdf")
     public ResponseEntity<Resource> getContractPdf(
             @PathVariable Long contractId,
-            @RequestParam Long userId) throws MalformedURLException {
+            @AuthenticationPrincipal UserDetails userDetails) throws MalformedURLException {
+
+        String email = userDetails.getUsername();
+        User loginUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
         Contract contract = contractRepository.findById(contractId)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_CONTRACT_EXCEPTION.getMessage()));
@@ -81,7 +100,7 @@ public class ContractController {
         }
 
         Transaction tx = contract.getTransaction();
-        if (!tx.getBuyer().getId().equals(userId) && !tx.getSeller().getId().equals(userId)) {
+        if (!tx.getBuyer().getId().equals(loginUser.getId()) && !tx.getSeller().getId().equals(loginUser.getId())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 

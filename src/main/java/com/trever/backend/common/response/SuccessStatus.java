@@ -37,6 +37,15 @@ public enum SuccessStatus {
     CAR_OPTION_GET_SEUCESS(HttpStatus.OK, "차량 옵션 조회 성공"),
     CAR_TYPE_GET_SEUCESS(HttpStatus.OK, "차종 조회 성공"),
     SEND_MEMBER_SUCCESS(HttpStatus.OK, "사용자 정보 조회 성공"),
+    GET_FAVORITE_SUCCESS(HttpStatus.OK, "찜 목록 조회 성공"),
+    REMOVE_FAVORITE_SUCCESS(HttpStatus.OK, "찜 취소 성공"),
+    ADD_FAVORITE_SUCCESS(HttpStatus.OK, "찜 추가 성공"),
+    GET_BALANCE_SUCCESS(HttpStatus.OK, "지갑 잔액 조회 성공"),
+    DEPOSIT_SUCCESS(HttpStatus.CREATED, "충전 성공"),
+    WITHDRAW_SUCCESS(HttpStatus.OK, "출금 성공"),
+    UPDATE_PROFILE_SUCCESS(HttpStatus.OK, "프로필 수정 성공"),
+    RECENT_VIEW_ADD_SUCCESS(HttpStatus.OK, "최근 본 차량 추가 성공"),
+    RECENT_VIEW_LIST_SUCCESS(HttpStatus.OK, "최근 본 차량 조회 성공"),
 
 
 

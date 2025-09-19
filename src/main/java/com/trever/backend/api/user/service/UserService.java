@@ -7,22 +7,20 @@ import com.trever.backend.api.user.entity.UserProfile;
 import com.trever.backend.api.user.entity.UserWallet;
 import com.trever.backend.api.user.repository.UserProfileRepository;
 import com.trever.backend.api.user.repository.UserRepository;
+import com.trever.backend.api.user.repository.UserWalletRepository;
 import com.trever.backend.common.exception.BadRequestException;
 import com.trever.backend.common.exception.NotFoundException;
 import com.trever.backend.common.response.ErrorStatus;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +31,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserWalletService userWalletService;
     private final JwtProvider jwtProvider;
+    private final UserWalletRepository userWalletRepository;
 
     // 회원가입
     @Transactional
@@ -62,7 +61,7 @@ public class UserService {
         //UserWallet 생성
         userWalletService.createUserWallet(user.getId());
 
-        return UserResponseDTO.from(savedUser, profile);
+        return UserResponseDTO.from(savedUser);
     }
 
     // 로그인
@@ -132,13 +131,44 @@ public class UserService {
 
     // 회원 정보
     @Transactional
-    public UserResponseDTO getMyInfo(String email) {
+    public MyPageResponseDTO getMyInfo(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
         UserProfile profile = userProfileRepository.findByUser(user)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
-        return UserResponseDTO.from(user, profile);
+        Long balance = userWalletRepository.findByUserId(user.getId())
+                .map(UserWallet::getBalance)
+                .orElse(0L);
+
+        return MyPageResponseDTO.from(user, profile, balance);
+    }
+
+    // 회원 정보 수정
+    @Transactional
+    public void updateUser(String email, UserUpdateRequestDTO userUpdateRequestDTO) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
+        UserProfile profile = userProfileRepository.findByUser(user)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_PROFILE_NOT_FOUND.getMessage()));
+
+        if (userUpdateRequestDTO.getName() != null) {
+            user.setName(userUpdateRequestDTO.getName());
+        }
+
+        if (userUpdateRequestDTO.getProfileImageUrl() != null) {
+            profile.setProfileImageUrl(userUpdateRequestDTO.getProfileImageUrl());
+        }
+        if (userUpdateRequestDTO.getNewPassword() != null && userUpdateRequestDTO.getCheckedPassword() != null) {
+            if (!userUpdateRequestDTO.getNewPassword().equals(userUpdateRequestDTO.getCheckedPassword())) {
+                throw new BadRequestException(ErrorStatus.PASSWORD_MISMATCH_EXCEPTION.getMessage());
+            }
+            user.setPassword(passwordEncoder.encode(userUpdateRequestDTO.getNewPassword()));
+        }
+
+        userRepository.save(user);
+        userProfileRepository.save(profile);
     }
 }

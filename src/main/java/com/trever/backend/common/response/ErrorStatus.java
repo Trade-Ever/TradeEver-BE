@@ -21,7 +21,7 @@ public enum ErrorStatus {
     INVALID_SELLER_SELECTION(HttpStatus.BAD_REQUEST, "판매자만 구매자를 선택할 수 있습니다."),
     INVALID_BUYER_SIGNATURE(HttpStatus.BAD_REQUEST, "구매자만 서명할 수 있습니다."),
     INVALID_SELLER_SIGNATURE(HttpStatus.BAD_REQUEST, "판매자만 서명할 수 있습니다."),
-
+    FAVORITE_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 찜한 차량입니다."),
 
     /**
      * 401 UNAUTHORIZED
@@ -50,6 +50,7 @@ public enum ErrorStatus {
     PURCHASE_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "구매 신청을 찾을 수 없습니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자 입니다."),
     USER_PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자 프로필을 찾을 수 없습니다."),
+    FAVORITE_NOT_FOUND(HttpStatus.NOT_FOUND, "찜을 찾을 수 없습니다."),
 
     /**
      * 500 SERVER_ERROR

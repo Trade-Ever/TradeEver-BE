@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AuctionRepository extends JpaRepository<Auction, Long> {
@@ -26,4 +27,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             Pageable pageable);
             
     List<Auction> findByEndAtBefore(LocalDateTime endAtBefore);
+
+    Optional<Auction> findByVehicleId(Long vehicleId);
+
 }

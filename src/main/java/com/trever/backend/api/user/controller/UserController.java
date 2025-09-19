@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -51,11 +53,23 @@ public class UserController {
     // 사용자 정보
     @Operation(summary = "사용자 정보 조회 API", description = "사용자 정보를 조회합니다.")
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<UserResponseDTO>> getMemberInfo(Authentication authentication) {
-        String email = authentication.getName();
-        UserResponseDTO userResponseDTO = userService.getMyInfo(email);
+    public ResponseEntity<ApiResponse<MyPageResponseDTO>> getMemberInfo(@AuthenticationPrincipal UserDetails userDetails) {
+        String email = userDetails.getUsername();
+        MyPageResponseDTO myPageResponseDTO = userService.getMyInfo(email);
 
-        return ApiResponse.success(SuccessStatus.SEND_MEMBER_SUCCESS, userResponseDTO);
+        return ApiResponse.success(SuccessStatus.SEND_MEMBER_SUCCESS, myPageResponseDTO);
+    }
+
+    @Operation(summary = "프로필 수정 API", description = "로그인한 사용자의 프로필 정보를 수정합니다.")
+    @PatchMapping("/profile")
+    public ResponseEntity<ApiResponse<Void>> updateProfile(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody UserUpdateRequestDTO userUpdateRequestDTO) {
+
+        String email = userDetails.getUsername();
+        userService.updateUser(email, userUpdateRequestDTO);
+
+        return ApiResponse.success_only(SuccessStatus.UPDATE_PROFILE_SUCCESS);
     }
 
 
