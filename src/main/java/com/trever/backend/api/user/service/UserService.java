@@ -57,14 +57,6 @@ public class UserService {
         UserProfile profile = userSignupRequestDTO.toProfileEntity(savedUser);
         userProfileRepository.save(profile);
 
-        // 회원가입 시 지갑 생성
-        UserWallet wallet = UserWallet.builder()
-                .user(savedUser)
-                .balance(0L)
-                .build();
-        userWalletRepository.save(wallet);
-
-
         return UserResponseDTO.from(savedUser);
     }
 
@@ -147,5 +139,32 @@ public class UserService {
                 .orElse(0L);
 
         return MyPageResponseDTO.from(user, profile, balance);
+    }
+
+    // 회원 정보 수정
+    @Transactional
+    public void updateUser(String email, UserUpdateRequestDTO userUpdateRequestDTO) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
+        UserProfile profile = userProfileRepository.findByUser(user)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_PROFILE_NOT_FOUND.getMessage()));
+
+        if (userUpdateRequestDTO.getName() != null) {
+            user.setName(userUpdateRequestDTO.getName());
+        }
+
+        if (userUpdateRequestDTO.getProfileImageUrl() != null) {
+            profile.setProfileImageUrl(userUpdateRequestDTO.getProfileImageUrl());
+        }
+        if (userUpdateRequestDTO.getNewPassword() != null && userUpdateRequestDTO.getCheckedPassword() != null) {
+            if (!userUpdateRequestDTO.getNewPassword().equals(userUpdateRequestDTO.getCheckedPassword())) {
+                throw new BadRequestException(ErrorStatus.PASSWORD_MISMATCH_EXCEPTION.getMessage());
+            }
+            user.setPassword(passwordEncoder.encode(userUpdateRequestDTO.getNewPassword()));
+        }
+
+        userRepository.save(user);
+        userProfileRepository.save(profile);
     }
 }

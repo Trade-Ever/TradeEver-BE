@@ -60,5 +60,17 @@ public class UserController {
         return ApiResponse.success(SuccessStatus.SEND_MEMBER_SUCCESS, myPageResponseDTO);
     }
 
+    @Operation(summary = "프로필 수정 API", description = "로그인한 사용자의 프로필 정보를 수정합니다.")
+    @PatchMapping("/profile")
+    public ResponseEntity<ApiResponse<Void>> updateProfile(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody UserUpdateRequestDTO userUpdateRequestDTO) {
+
+        String email = userDetails.getUsername();
+        userService.updateUser(email, userUpdateRequestDTO);
+
+        return ApiResponse.success_only(SuccessStatus.UPDATE_PROFILE_SUCCESS);
+    }
+
 
 }

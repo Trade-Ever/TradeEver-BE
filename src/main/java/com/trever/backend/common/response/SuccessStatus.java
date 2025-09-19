@@ -41,6 +41,7 @@ public enum SuccessStatus {
     GET_BALANCE_SUCCESS(HttpStatus.OK, "지갑 잔액 조회 성공"),
     DEPOSIT_SUCCESS(HttpStatus.CREATED, "충전 성공"),
     WITHDRAW_SUCCESS(HttpStatus.OK, "출금 성공"),
+    UPDATE_PROFILE_SUCCESS(HttpStatus.OK, "프로필 수정 성공"),
 
 
     /**
