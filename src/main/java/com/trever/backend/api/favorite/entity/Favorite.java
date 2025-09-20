@@ -1,5 +1,7 @@
 package com.trever.backend.api.favorite.entity;
 
+import com.trever.backend.api.user.entity.User;
+import com.trever.backend.api.vehicle.entity.Vehicle;
 import com.trever.backend.common.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -18,7 +20,11 @@ public class Favorite extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    private Long vehicleId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vehicle_id", nullable = false)
+    private Vehicle vehicle;
 }

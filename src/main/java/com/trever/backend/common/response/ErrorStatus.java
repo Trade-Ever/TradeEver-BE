@@ -22,6 +22,9 @@ public enum ErrorStatus {
     INVALID_BUYER_SIGNATURE(HttpStatus.BAD_REQUEST, "구매자만 서명할 수 있습니다."),
     INVALID_SELLER_SIGNATURE(HttpStatus.BAD_REQUEST, "판매자만 서명할 수 있습니다."),
     FAVORITE_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 찜한 차량입니다."),
+    INSUFFICIENT_FUNDS(HttpStatus.BAD_REQUEST, "잔액이 부족합니다."),
+    TRANSACTION_ACCESS_DENIED(HttpStatus.BAD_REQUEST,"해당 거래에 접근 권한이 없습니다."),
+    PURCHASE_REQUEST_ALREADY_EXISTS(HttpStatus.BAD_REQUEST,"이미 신청한 거래입니다."),
 
     /**
      * 401 UNAUTHORIZED

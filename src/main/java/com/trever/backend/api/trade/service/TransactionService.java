@@ -52,9 +52,15 @@ public class TransactionService {
         User buyer = userRepository.findById(buyerId)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
+        // 중복 신청 방지
+        boolean alreadyApplied = purchaseRequestRepository.existsByVehicleIdAndBuyerId(vehicleId, buyerId);
+        if (alreadyApplied) {
+            throw new BadRequestException(ErrorStatus.PURCHASE_REQUEST_ALREADY_EXISTS.getMessage());
+        }
+
         // 지갑 잔액 확인
         if (!userWalletService.hasSufficientFunds(buyerId, vehicle.getPrice())) {
-            throw new BadRequestException("잔액이 부족합니다.");
+            throw new BadRequestException(ErrorStatus.INSUFFICIENT_FUNDS.getMessage());
         }
 
         PurchaseApplication request = PurchaseApplication.builder()
@@ -106,7 +112,7 @@ public class TransactionService {
 
         // 지갑 잔액 확인
         if (!userWalletService.hasSufficientFunds(buyerId, vehicle.getPrice())) {
-            throw new BadRequestException("구매자의 잔액이 부족합니다.");
+            throw new BadRequestException(ErrorStatus.INSUFFICIENT_FUNDS.getMessage());
         }
 
         // 거래 생성
@@ -118,7 +124,9 @@ public class TransactionService {
                 .status(IN_PROGRESS)
                 .build();
 
-        vehicleRepository.updateVehicleStatus(vehicle.getId(),VehicleStatus.IN_PROGRESS);
+        // 차량 상태 변경
+        vehicle.setVehicleStatus(VehicleStatus.IN_PROGRESS);
+        vehicleRepository.save(vehicle);
 
         Transaction savedTransaction = transactionRepository.save(transaction);
 
@@ -128,6 +136,7 @@ public class TransactionService {
     }
 
     // 경매 거래 생성
+    @Transactional
     public TransactionResponseDTO createTransactionFromAuction(Long auctionId) {
         // 1. 경매 ID로 경매 조회
         Auction auction = auctionRepository.findById(auctionId)
@@ -144,6 +153,11 @@ public class TransactionService {
         Vehicle vehicle = vehicleRepository.findById(auction.getVehicle().getId())
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_VEHICLE.getMessage()));
 
+        // 지갑 잔액 확인
+        if (!userWalletService.hasSufficientFunds(buyer.getId(), winningBid.getBidPrice())) {
+            throw new BadRequestException(ErrorStatus.INSUFFICIENT_FUNDS.getMessage());
+        }
+
         // 4. Transaction 객체 생성
         Transaction transaction = Transaction.builder()
                 .vehicle(vehicle)
@@ -152,6 +166,9 @@ public class TransactionService {
                 .finalPrice(winningBid.getBidPrice())
                 .status(IN_PROGRESS)
                 .build();
+
+        // 차량 상태 변경
+        vehicle.setVehicleStatus(VehicleStatus.IN_PROGRESS);
 
         // 5. 거래 저장 후 계약 생성
         Transaction saved = transactionRepository.save(transaction);
@@ -169,7 +186,7 @@ public class TransactionService {
         // 권한 검증
         if (!transaction.getBuyer().getId().equals(loginUserId) &&
                 !transaction.getSeller().getId().equals(loginUserId)) {
-            throw new BadRequestException("해당 거래에 접근 권한이 없습니다.");
+            throw new BadRequestException(ErrorStatus.TRANSACTION_ACCESS_DENIED.getMessage());
         }
 
         return TransactionResponseDTO.from(transaction);
