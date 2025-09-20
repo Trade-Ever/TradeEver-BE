@@ -72,9 +72,6 @@ public class VehicleController {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
-        // 최근 본 차량 자동 추가
-        recentViewService.addRecentView(user.getId(), vehicleId);
-
         VehicleResponse vehicle = vehicleService.getVehicleDetail(vehicleId, user.getId());
         return ApiResponse.success(SuccessStatus.CAR_INFO_SUCCESS, vehicle);
     }

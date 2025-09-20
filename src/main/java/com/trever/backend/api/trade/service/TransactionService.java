@@ -174,4 +174,20 @@ public class TransactionService {
 
         return TransactionResponseDTO.from(transaction);
     }
+
+    // 구매 내역 조회 (내가 buyer인 경우)
+    @Transactional
+    public List<TransactionResponseDTO> getMyPurchases(Long userId) {
+        return transactionRepository.findByBuyerId(userId).stream()
+                .map(TransactionResponseDTO::from)
+                .toList();
+    }
+
+    // 판매 내역 조회 (내가 seller인 경우)
+    @Transactional
+    public List<TransactionResponseDTO> getMySales(Long userId) {
+        return transactionRepository.findBySellerId(userId).stream()
+                .map(TransactionResponseDTO::from)
+                .toList();
+    }
 }

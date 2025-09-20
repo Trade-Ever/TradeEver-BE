@@ -65,7 +65,6 @@ public class RecentViewService {
                             .isAuction(v.getIsAuction())
                             .auctionId(v.getAuctionId())
                             .representativePhotoUrl(v.getRepresentativePhotoUrl())
-                            .locationAddress(v.getLocationAddress())
                             .favoriteCount(v.getFavoriteCount())
                             .createdAt(v.getCreatedAt())
                             .build();
