@@ -76,7 +76,9 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/users/signup",
                                 "/api/v1/users/reissue",
-                                "/api/v1/users/login"
+                                "/api/v1/users/login",
+                                "/api/v1/users/auth/google/login"
+
                         ).permitAll()
 
                         // Public: 차량 관련
