@@ -31,6 +31,27 @@ public class UserController {
         return ApiResponse.success(SuccessStatus.SEND_REGISTER_SUCCESS, response);
     }
 
+    @PostMapping("/auth/google/login")
+    public ResponseEntity<ApiResponse<TokenResponseDTO>> googleLogin(@RequestBody GoogleLoginRequest req) {
+        String idToken = req.getIdToken();
+        TokenResponseDTO tokens = userService.loginWithGoogleIdToken(idToken);
+        return ApiResponse.success(SuccessStatus.SEND_LOGIN_SUCCESS, tokens);
+    }
+
+    @Operation(summary = "회원 추가 정보 입력(완성) API", description = "로그인한 사용자가 전화번호/주소/생년월일/이름 등 누락된 정보를 채웁니다.")
+    @PostMapping("/me/complete")
+    public ResponseEntity<ApiResponse<Void>> completeProfile(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody UserCompleteRequestDTO req) {
+
+
+
+        String email = userDetails.getUsername();
+        userService.completeUserProfile(email, req);
+
+        return ApiResponse.success_only(SuccessStatus.UPDATE_PROFILE_SUCCESS);
+    }
+
     // 로그인
     @Operation(summary = "로그인 API", description = "이메일로 로그인을 처리합니다.")
     @PostMapping("/login")

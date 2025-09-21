@@ -1,5 +1,6 @@
 package com.trever.backend.api.user.service;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.trever.backend.api.jwt.JwtProvider;
 import com.trever.backend.api.user.dto.*;
 import com.trever.backend.api.user.entity.User;
@@ -19,8 +20,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.threeten.bp.format.DateTimeParseException;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +39,7 @@ public class UserService {
     private final UserWalletService userWalletService;
     private final JwtProvider jwtProvider;
     private final UserWalletRepository userWalletRepository;
+    private final GoogleOAuthService googleOAuthService;
 
     // 회원가입
     @Transactional
@@ -94,6 +102,132 @@ public class UserService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .build();
+    }
+
+    @Transactional
+    public TokenResponseDTO loginWithGoogleIdToken(String idTokenString) {
+        if (idTokenString == null || idTokenString.isBlank()) {
+            throw new IllegalArgumentException("idToken is required");
+        }
+
+        GoogleIdToken.Payload payload = googleOAuthService.verifyIdToken(idTokenString);
+
+        String sub = payload.getSubject();
+        String email = payload.getEmail();
+        String name = (String) payload.get("name");
+        String picture = (String) payload.get("picture");
+
+        // 기존 사용자 조회 (이 프로젝트에서는 email 기준으로 사용)
+        User user = userRepository.findByEmail(email).orElseGet(() -> {
+            // 신규 유저 생성
+            String randomPw = UUID.randomUUID().toString();
+            String encodedPw = passwordEncoder.encode(randomPw);
+
+            User newUser = User.builder()
+                    .email(email)
+                    .password(encodedPw)
+                    .name(name)
+                    .build();
+
+            User saved = userRepository.save(newUser);
+
+            // 프로필 생성 (필드/빌더는 엔티티에 맞추세요)
+            UserProfile profile = UserProfile.builder()
+                    .user(saved)
+                    .profileImageUrl(picture)
+                    .build();
+            userProfileRepository.save(profile);
+
+            // 지갑 생성
+            userWalletService.createUserWallet(saved.getId());
+
+            return saved;
+        });
+
+        // 인증 객체 생성 (권한 ROLE_USER)
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                user.getEmail(), null,
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+        );
+
+        // JWT 발급 (기존 login()과 동일하게)
+        String accessToken = jwtProvider.generateAccessToken(auth);
+        String refreshToken = jwtProvider.generateRefreshToken(user.getEmail());
+
+        // DB에 refreshToken 저장
+        user.updateRefreshtoken(refreshToken);
+        userRepository.save(user);
+
+        // --- 프로필 완성도 검사 ---
+        UserProfile profile = userProfileRepository.findByUser(user)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
+        List<String> missing = new ArrayList<>();
+
+        // 이름 검사
+        if (user.getName() == null || user.getName().isBlank()) {
+            missing.add("name");
+        }
+
+        // 전화번호 검사 (User.phone)
+        if (user.getPhone() == null || user.getPhone().isBlank()) {
+            missing.add("phone");
+        }
+
+        // 생년월일 검사 (UserProfile.birthDate)
+        if (profile == null || profile.getBirthDate() == null) {
+            missing.add("birthDate");
+        }
+
+        // 주소/도시 검사 (UserProfile.locationCity)
+        if (profile == null || profile.getLocationCity() == null || profile.getLocationCity().isBlank()) {
+            missing.add("locationCity");
+        }
+
+        boolean profileComplete = missing.isEmpty();
+
+        return TokenResponseDTO.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .profileComplete(profileComplete)
+                .build();
+    }
+
+    @Transactional
+    public void completeUserProfile(String email, UserCompleteRequestDTO req) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
+        // 이름 업데이트
+        if (req.getName() != null && !req.getName().isBlank()) {
+            user.setName(req.getName());
+        }
+
+        // 전화번호 업데이트
+        if (req.getPhone() != null && !req.getPhone().isBlank()) {
+            user.setPhone(req.getPhone());
+        }
+
+        // UserProfile
+        UserProfile profile = userProfileRepository.findByUser(user)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_PROFILE_NOT_FOUND.getMessage()));
+
+        if (req.getLocationCity() != null && !req.getLocationCity().isBlank()) {
+            profile.setLocationCity(req.getLocationCity());
+        }
+
+        if (req.getBirthDate() != null && !req.getBirthDate().isBlank()) {
+            try {
+                LocalDate parsed = LocalDate.parse(req.getBirthDate(), DateTimeFormatter.ISO_LOCAL_DATE);
+                profile.setBirthDate(parsed);
+            } catch (DateTimeParseException e) {
+                throw new BadRequestException("birthDate must be yyyy-MM-dd");
+            }
+        }
+
+        // save
+        userRepository.save(user);
+        userProfileRepository.save(profile);
     }
 
     // 토큰 재발급
