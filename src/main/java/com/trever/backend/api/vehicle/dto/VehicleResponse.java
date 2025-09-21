@@ -38,6 +38,7 @@ public class VehicleResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Long sellerId;
+    private String sellerPhone;
     private String sellerName;
     private List<VehiclePhotoDto> photos; // 차량 사진 목록 추가
 

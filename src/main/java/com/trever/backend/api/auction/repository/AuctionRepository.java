@@ -28,6 +28,16 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             
     List<Auction> findByEndAtBefore(LocalDateTime endAtBefore);
 
-    Optional<Auction> findByVehicleId(Long vehicleId);
+    // 특정 상태이고 시작 시간이 특정 시간 이전인 경매 조회
+    List<Auction> findByStatusAndStartAtBefore(AuctionStatus status, LocalDateTime startAtBefore);
+
+    // 특정 상태이고 시작 시간이 특정 시간과 정확히 일치하는 경매 조회
+    List<Auction> findByStatusAndStartAtEquals(AuctionStatus status, LocalDateTime startAt);
+
+    // 특정 상태이고 종료 시간이 특정 시간 이전인 경매 조회
+    List<Auction> findByStatusAndEndAtBefore(AuctionStatus status, LocalDateTime endAtBefore);
+
+    // 종료 시간이 특정 범위 내에 있는 경매 조회
+    List<Auction> findByStatusAndEndAtBetween(AuctionStatus status, LocalDateTime from, LocalDateTime to);
 
 }
