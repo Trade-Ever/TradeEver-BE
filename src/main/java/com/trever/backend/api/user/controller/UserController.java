@@ -72,5 +72,13 @@ public class UserController {
         return ApiResponse.success_only(SuccessStatus.UPDATE_PROFILE_SUCCESS);
     }
 
+    @Operation(summary = "로그아웃 API", description = "사용자가 로그아웃합니다.")
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @AuthenticationPrincipal UserDetails userDetails) {
 
+        String email = userDetails.getUsername(); // JWT에서 꺼낸 이메일
+        userService.logout(email);
+        return ApiResponse.success_only(SuccessStatus.SEND_LOGOUT_SUCCESS);
+    }
 }
