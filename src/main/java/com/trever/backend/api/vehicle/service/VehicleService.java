@@ -2,7 +2,7 @@ package com.trever.backend.api.vehicle.service;
 
 import com.trever.backend.api.auction.dto.AuctionCreateRequest;
 import com.trever.backend.api.auction.service.AuctionService;
-import com.trever.backend.api.recentview.service.RecentViewService;
+import com.trever.backend.api.recent.service.RecentViewService;
 import com.trever.backend.api.vehicle.entity.VehicleStatus;
 import com.trever.backend.common.exception.BadRequestException;
 import com.trever.backend.common.exception.NotFoundException;
@@ -143,8 +143,9 @@ public class VehicleService {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new NotFoundException("차량을 찾을 수 없습니다."));
 
-        // 최근 본 차량에 추가
-        recentViewService.addRecentView(userId, vehicleId);
+        if (userId != null) {
+            recentViewService.addRecentView(userId, vehicleId);
+        }
 
         User user = userRepository.findById(vehicle.getSeller().getId())
                 .orElseThrow(() -> new NotFoundException("판매자를 찾을 수 없습니다."));
@@ -237,8 +238,12 @@ public class VehicleService {
         if (!vehicle.getSeller().getId().equals(userId)) {
             throw new BadRequestException("자신이 등록한 차량만 삭제할 수 있습니다.");
         }
-        
+
         // TODO: 경매가 진행 중인 경우 삭제 불가 처리 추가
+        // 거래 중이거나 경매 등록된 차량 삭제 불가
+        if (vehicle.getVehicleStatus() != VehicleStatus.ACTIVE) {
+            throw new BadRequestException("거래 중이거나 경매 등록된 차량은 삭제할 수 없습니다.");
+        }
         
         vehicleRepository.delete(vehicle);
     }
@@ -310,6 +315,33 @@ public class VehicleService {
                 .favoriteCount(vehicle.getFavoriteCount())
                 .createdAt(vehicle.getCreatedAt())
                 .totalOptionsCount(options.size())
+                .build();
+    }
+
+    // 차량 검색
+    @Transactional
+    public VehicleListResponse searchVehicles(String keyword, int page, int size, String sortBy, Boolean isAuction) {
+        Pageable pageable = (sortBy != null)
+                ? PageRequest.of(page, size, Sort.by(sortBy).descending())
+                : PageRequest.of(page, size);
+
+        Page<Vehicle> vehiclePage;
+
+        if (isAuction != null) {
+            vehiclePage = vehicleRepository.searchByKeywordAndAuction(keyword, isAuction ? 'Y' : 'N', pageable);
+        } else {
+            vehiclePage = vehicleRepository.searchByKeyword(keyword, pageable);
+        }
+
+        List<VehicleListResponse.VehicleSummary> summaries = vehiclePage.getContent().stream()
+                .map(this::buildVehicleSummary)
+                .toList();
+
+        return VehicleListResponse.builder()
+                .vehicles(summaries)
+                .totalCount((int) vehiclePage.getTotalElements())
+                .pageNumber(vehiclePage.getNumber())
+                .pageSize(vehiclePage.getSize())
                 .build();
     }
 }

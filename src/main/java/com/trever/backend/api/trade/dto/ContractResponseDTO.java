@@ -17,8 +17,7 @@ public class ContractResponseDTO {
     private String sellerName;
 
     // 계약 상태 정보
-    private boolean signedByBuyer;
-    private boolean signedBySeller;
+    private String status;
     private LocalDateTime signedAt;
 
     // 최종 계약서 pdf (완료 전이면 null)
@@ -30,9 +29,8 @@ public class ContractResponseDTO {
                 .contractId(contract.getId())
                 .transactionId(contract.getTransaction().getId())
                 .buyerName(contract.getTransaction().getBuyer().getName())
-                .sellerName(contract.getTransaction().getBuyer().getName())
-                .signedByBuyer(contract.isSignedByBuyer())
-                .signedBySeller(contract.isSignedBySeller())
+                .sellerName(contract.getTransaction().getSeller().getName())
+                .status(contract.getStatus().name())
                 .signedAt(contract.getSignedAt())
                 .contractPdfUrl(contract.getContractPdfUrl()) // 완료 전이면 null
                 .build();

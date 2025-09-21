@@ -171,4 +171,17 @@ public class UserService {
         userRepository.save(user);
         userProfileRepository.save(profile);
     }
+
+    // 로그아웃
+    @Transactional
+    public void logout(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
+        if (user.getRefreshToken() == null) {
+            throw new BadRequestException(ErrorStatus.USER_ALREADY_LOGGED_OUT.getMessage());
+        }
+
+        user.updateRefreshtoken(null);
+    }
 }

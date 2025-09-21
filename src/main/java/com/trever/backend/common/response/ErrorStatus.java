@@ -15,6 +15,7 @@ public enum ErrorStatus {
      */
     VALIDATION_REQUEST_MISSING_EXCEPTION(HttpStatus.BAD_REQUEST, "요청 값이 입력되지 않았습니다."),
     ALREADY_REGISTERED_ACCOUNT_EXCEPTION(HttpStatus.BAD_REQUEST, "이미 회원가입된 이메일입니다."),
+    USER_ALREADY_LOGGED_OUT(HttpStatus.BAD_REQUEST, "이미 로그아웃 되었습니다."),
     NOT_MATCHED_LOGIN_USER_EXCEPTION(HttpStatus.BAD_REQUEST, "아이디 또는 비밀번호가 일치하지 않습니다."),
     NOT_REGISTER_USER_EXCEPTION(HttpStatus.BAD_REQUEST, "존재하지 않는 사용자 입니다."),
     PASSWORD_MISMATCH_EXCEPTION(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
@@ -22,6 +23,10 @@ public enum ErrorStatus {
     INVALID_BUYER_SIGNATURE(HttpStatus.BAD_REQUEST, "구매자만 서명할 수 있습니다."),
     INVALID_SELLER_SIGNATURE(HttpStatus.BAD_REQUEST, "판매자만 서명할 수 있습니다."),
     FAVORITE_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 찜한 차량입니다."),
+    INSUFFICIENT_FUNDS(HttpStatus.BAD_REQUEST, "잔액이 부족합니다."),
+    TRANSACTION_ACCESS_DENIED(HttpStatus.BAD_REQUEST,"해당 거래에 접근 권한이 없습니다."),
+    PURCHASE_REQUEST_ALREADY_EXISTS(HttpStatus.BAD_REQUEST,"이미 신청한 거래입니다."),
+    CANNOT_APPLY_OWN_VEHICLE(HttpStatus.BAD_REQUEST,"자신이 등록한 차량에는 구매 신청을 할 수 없습니다."),
 
     /**
      * 401 UNAUTHORIZED

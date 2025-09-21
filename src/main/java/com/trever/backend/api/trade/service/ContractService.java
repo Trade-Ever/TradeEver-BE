@@ -2,16 +2,16 @@ package com.trever.backend.api.trade.service;
 
 import com.trever.backend.api.trade.dto.ContractResponseDTO;
 import com.trever.backend.api.trade.entity.Contract;
+import com.trever.backend.api.trade.entity.ContractStatus;
 import com.trever.backend.api.trade.entity.Transaction;
 import com.trever.backend.api.trade.repository.ContractRepository;
 import com.trever.backend.api.trade.repository.TransactionRepository;
 import com.trever.backend.api.user.entity.UserProfile;
 import com.trever.backend.api.user.repository.UserProfileRepository;
-import com.trever.backend.api.user.service.UserService;
+import com.trever.backend.api.user.service.UserWalletService;
 import com.trever.backend.api.vehicle.entity.Vehicle;
 import com.trever.backend.api.vehicle.entity.VehicleStatus;
 import com.trever.backend.api.vehicle.repository.VehicleRepository;
-import com.trever.backend.api.vehicle.service.VehicleService;
 import com.trever.backend.common.exception.BadRequestException;
 import com.trever.backend.common.exception.InternalServerException;
 import com.trever.backend.common.exception.NotFoundException;
@@ -20,7 +20,6 @@ import com.trever.backend.common.util.PdfGenerator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
@@ -39,6 +38,7 @@ public class ContractService {
     private final SpringTemplateEngine templateEngine;
     private final UserProfileRepository userProfileRepository;
     private final VehicleRepository vehicleRepository;
+    private final UserWalletService userWalletService;
 
     // 계약 생성 (거래 확정 시 자동 생성)
     @Transactional
@@ -54,8 +54,7 @@ public class ContractService {
         // 신규 게약 생성
         Contract contract = Contract.builder()
                 .transaction(transaction)
-                .signedByBuyer(false)
-                .signedBySeller(false)
+                .status(ContractStatus.PENDING)
                 .signedAt(null)
                 .contractPdfUrl(null)
                 .build();
@@ -68,9 +67,15 @@ public class ContractService {
 
     // 계약 조회
     @Transactional
-    public ContractResponseDTO getContract(Long contractId) {
+    public ContractResponseDTO getContract(Long contractId, Long loginUserId) {
         Contract contract = contractRepository.findById(contractId)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_CONTRACT_EXCEPTION.getMessage()));
+
+        Transaction transaction = contract.getTransaction();
+        if (!transaction.getBuyer().getId().equals(loginUserId) &&
+                !transaction.getSeller().getId().equals(loginUserId)) {
+            throw new BadRequestException(ErrorStatus.TRANSACTION_ACCESS_DENIED.getMessage());
+        }
 
         return ContractResponseDTO.from(contract);
     }
@@ -78,14 +83,7 @@ public class ContractService {
     // 구매자 서명
     @Transactional
     public ContractResponseDTO signAsBuyer(Long contractId, Long userId) {
-        Contract contract = contractRepository.findById(contractId)
-                .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_CONTRACT_EXCEPTION.getMessage()));
-
-        Transaction transaction = contract.getTransaction();
-        if (!transaction.getBuyer().getId().equals(userId)) {
-            throw new BadRequestException(ErrorStatus.INVALID_BUYER_SIGNATURE.getMessage());
-        }
-
+        Contract contract = getValidContract(contractId, userId, true);
         contract.signAsBuyer(); // 엔티티 메서드 사용
         checkIfFullySigned(contract);
         return ContractResponseDTO.from(contract);
@@ -94,14 +92,7 @@ public class ContractService {
     // 판매자 서명
     @Transactional
     public ContractResponseDTO signAsSeller(Long contractId, Long userId) {
-        Contract contract = contractRepository.findById(contractId)
-                .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_CONTRACT_EXCEPTION.getMessage()));
-
-        Transaction transaction = contract.getTransaction();
-        if (!transaction.getSeller().getId().equals(userId)) {
-            throw new BadRequestException(ErrorStatus.INVALID_SELLER_SIGNATURE.getMessage());
-        }
-
+        Contract contract = getValidContract(contractId, userId, false);
         contract.signAsSeller();
         checkIfFullySigned(contract);
         return ContractResponseDTO.from(contract);
@@ -109,13 +100,20 @@ public class ContractService {
 
     // 양쪽 다 서명했을 때 최종 처리
     private void checkIfFullySigned(Contract contract) {
-        if (contract.isSignedByBuyer() && contract.isSignedBySeller()) {
+        if (contract.getStatus() == ContractStatus.COMPLETED) {
             Transaction transaction = contract.getTransaction();
-
             Vehicle vehicle = transaction.getVehicle();
+
             if (vehicle == null) {
                 throw new NotFoundException(ErrorStatus.VEHICLE_NOT_FOUND.getMessage());
             }
+
+            Long price = transaction.getFinalPrice();
+            Long buyerId = transaction.getBuyer().getId();
+            Long sellerId = transaction.getSeller().getId();
+
+            // 돈 이동
+            userWalletService.transfer(buyerId, sellerId, price);
 
             // 구매자, 판매자 프로필 정보 조회
             UserProfile buyerProfile = userProfileRepository.findByUser(transaction.getBuyer())
@@ -147,7 +145,9 @@ public class ContractService {
                 PdfGenerator.generatePdfFromHtml(htmlContent, filePath);
 
                 // URL 저장
-                contract.setContractPdfUrl("uploads/contracts/" + fileName);
+                // API 경로 저장 (앱에서 바로 호출 가능)
+                contract.setContractPdfUrl("/api/v1/contracts/" + contract.getId() + "/pdf");
+                contract.setSignedAt(LocalDateTime.now());
             } catch (Exception e) {
                 throw new InternalServerException(ErrorStatus.PASSPORT_SIGN_ERROR_EXCEPTION.getMessage());
             }
@@ -159,5 +159,21 @@ public class ContractService {
             transactionRepository.save(transaction);
             contractRepository.save(contract);
         }
+    }
+
+    private Contract getValidContract(Long contractId, Long userId, boolean isBuyer) {
+        Contract contract = contractRepository.findById(contractId)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_CONTRACT_EXCEPTION.getMessage()));
+
+        Transaction tx = contract.getTransaction();
+        Long expectedId = isBuyer ? tx.getBuyer().getId() : tx.getSeller().getId();
+
+        if (!expectedId.equals(userId)) {
+            throw new BadRequestException(isBuyer
+                    ? ErrorStatus.INVALID_BUYER_SIGNATURE.getMessage()
+                    : ErrorStatus.INVALID_SELLER_SIGNATURE.getMessage());
+        }
+
+        return contract;
     }
 }

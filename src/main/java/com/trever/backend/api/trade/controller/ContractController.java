@@ -45,9 +45,15 @@ public class ContractController {
     // 거래에 연결된 계약 조회
     @Operation(summary = "계약 조회 API", description = "계약을 조회합니다.")
     @GetMapping("/{contractId}")
-    public ResponseEntity<ApiResponse<ContractResponseDTO>> getContract(@PathVariable Long contractId) {
+    public ResponseEntity<ApiResponse<ContractResponseDTO>> getContract(
+            @PathVariable Long contractId,
+            @AuthenticationPrincipal UserDetails userDetails) {
 
-        ContractResponseDTO contractResponseDTO = contractService.getContract(contractId);
+        String email = userDetails.getUsername();
+        User loginUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
+        ContractResponseDTO contractResponseDTO = contractService.getContract(contractId, loginUser.getId());
         return ApiResponse.success(SuccessStatus.SEND_CONTRACT_SUCCESS, contractResponseDTO);
     }
 
@@ -100,12 +106,13 @@ public class ContractController {
         }
 
         Transaction tx = contract.getTransaction();
-        if (!tx.getBuyer().getId().equals(loginUser.getId()) && !tx.getSeller().getId().equals(loginUser.getId())) {
+        if (!tx.getBuyer().getId().equals(loginUser.getId()) &&
+                !tx.getSeller().getId().equals(loginUser.getId())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        // 파일 읽어서 반환
-        String fileName = Paths.get(contract.getContractPdfUrl()).getFileName().toString();
+        // 저장된 경로는 상대경로 (/api/v1/contracts/1/pdf), 실제 파일 경로는 uploads/contracts
+        String fileName = "contract_" + contract.getId() + ".pdf";
         Path filePath = Paths.get("uploads/contracts").resolve(fileName).normalize();
         Resource resource = new UrlResource(filePath.toUri());
 

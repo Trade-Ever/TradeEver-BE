@@ -86,4 +86,27 @@ public class UserWalletService {
                     return walletRepository.save(newWallet);
                 });
     }
+
+    @Transactional
+    public void transfer(Long fromUserId, Long toUserId, Long amount) {
+        if (amount <= 0) {
+            throw new BadRequestException("이체 금액은 0보다 커야 합니다.");
+        }
+
+        // 출금
+        UserWallet fromWallet = getUserWallet(fromUserId);
+        if (fromWallet.getBalance() < amount) {
+            throw new BadRequestException("잔액이 부족합니다.");
+        }
+        fromWallet.setBalance(fromWallet.getBalance() - amount);
+
+        // 입금
+        UserWallet toWallet = getOrCreateWallet(toUserId);
+        toWallet.setBalance(toWallet.getBalance() + amount);
+
+        // 저장
+        walletRepository.save(fromWallet);
+        walletRepository.save(toWallet);
+    }
+
 }

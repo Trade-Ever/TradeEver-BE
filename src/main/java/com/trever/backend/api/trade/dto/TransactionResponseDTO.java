@@ -18,6 +18,10 @@ public class TransactionResponseDTO {
     private String status;     // 거래 상태 (예: COMPLETED, IN_PROGRESS 등)
     private String createdAt;
 
+    // 계약 정보 추가
+    private Long contractId;
+    private String contractPdfUrl;
+
     public static TransactionResponseDTO from(Transaction transaction) {
         return TransactionResponseDTO.builder()
                 .transactionId(transaction.getId())
@@ -28,6 +32,8 @@ public class TransactionResponseDTO {
                 .finalPrice(transaction.getFinalPrice())
                 .status(transaction.getStatus().name())
                 .createdAt(transaction.getCreatedAt().toString())
+                .contractId(transaction.getContract() != null ? transaction.getContract().getId() : null)
+                .contractPdfUrl(transaction.getContract() != null ? transaction.getContract().getContractPdfUrl() : null)
                 .build();
     }
 

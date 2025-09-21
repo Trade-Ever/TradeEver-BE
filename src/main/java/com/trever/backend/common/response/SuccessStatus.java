@@ -14,6 +14,7 @@ public enum SuccessStatus {
      */
     SEND_REGISTER_SUCCESS(HttpStatus.OK,"회원가입 성공"),
     SEND_LOGIN_SUCCESS(HttpStatus.OK, "로그인 성공"),
+    SEND_LOGOUT_SUCCESS(HttpStatus.OK, "로그아웃 성공"),
     SEND_REISSUE_TOKEN_SUCCESS(HttpStatus.OK,"토큰 재발급 성공"),
     SEND_HEALTH_SUCCESS(HttpStatus.OK,"서버 상태 OK"),
     AUCTION_CREATED(HttpStatus.OK,"경매 생성"),
@@ -46,6 +47,9 @@ public enum SuccessStatus {
     UPDATE_PROFILE_SUCCESS(HttpStatus.OK, "프로필 수정 성공"),
     RECENT_VIEW_ADD_SUCCESS(HttpStatus.OK, "최근 본 차량 추가 성공"),
     RECENT_VIEW_LIST_SUCCESS(HttpStatus.OK, "최근 본 차량 조회 성공"),
+    RECENT_SEARCH_ADD_SUCCESS(HttpStatus.OK, "최근 검색어 추가 성공"),
+    RECENT_SEARCH_LIST_SUCCESS(HttpStatus.OK, "최근 검색어 조회 성공"),
+    RECENT_SEARCH_DELETE_SUCCESS(HttpStatus.OK, "최근 검색어 삭제 성공"),
 
 
 
