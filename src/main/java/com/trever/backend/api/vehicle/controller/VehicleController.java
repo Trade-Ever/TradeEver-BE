@@ -6,17 +6,16 @@ import com.trever.backend.api.recent.service.RecentSearchService;
 import com.trever.backend.api.recent.service.RecentViewService;
 import com.trever.backend.api.user.entity.User;
 import com.trever.backend.api.user.repository.UserRepository;
+import com.trever.backend.api.vehicle.dto.*;
 import com.trever.backend.common.exception.NotFoundException;
 import com.trever.backend.common.response.ApiResponse;
 import com.trever.backend.common.response.ErrorStatus;
 import com.trever.backend.common.response.SuccessStatus;
-import com.trever.backend.api.vehicle.dto.VehicleCreateRequest;
-import com.trever.backend.api.vehicle.dto.VehicleListResponse;
-import com.trever.backend.api.vehicle.dto.VehicleResponse;
 import com.trever.backend.api.vehicle.service.VehicleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -125,27 +124,62 @@ public class VehicleController {
 //        return ApiResponse.success(SuccessStatus.BID_SUCESS, VehicleStatus.values());
 //    }
 
-    @Operation(summary = "차량 검색", description = "키워드(차명, 제조사, 모델, 설명)로 차량을 검색합니다.")
-    @GetMapping("/search")
-    public ResponseEntity<ApiResponse<VehicleListResponse>> searchVehicles(
-            @RequestParam String keyword,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String sortBy,
-            @RequestParam(required = false) Boolean isAuction,
-            @AuthenticationPrincipal UserDetails userDetails
-    ) {
-        Long loginUserId = null;
-        if (userDetails != null) {
-            String email = userDetails.getUsername();
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
-            loginUserId = user.getId();
 
-            // 최근 검색어 저장
-            recentSearchService.addSearch(loginUserId, keyword);
-        }
-        VehicleListResponse response = vehicleService.searchVehicles(keyword, page, size, sortBy, isAuction);
-        return ApiResponse.success(SuccessStatus.CAR_INFO_SUCCESS, response);
+    /**
+     * 필터링 조건으로 차량 검색
+     */
+    @PostMapping("/search")
+    @Operation(summary = "차량 검색", description = "차량을 검색합니다.")
+    public ResponseEntity<ApiResponse<VehicleListResponse>> searchVehicles(
+            @RequestBody VehicleSearchRequest request
+    ) {
+        VehicleListResponse result = vehicleService.searchByFilter(request);
+
+        //        Long loginUserId = null;
+//        if (userDetails != null) {
+//            String email = userDetails.getUsername();
+//            User user = userRepository.findByEmail(email)
+//                    .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+//            loginUserId = user.getId();
+//
+//            // 최근 검색어 저장
+//            recentSearchService.addSearch(loginUserId, request.getKeyword());
+//        }
+//
+
+        return ApiResponse.success(SuccessStatus.CAR_INFO_SUCCESS, result);
+    }
+
+    /**
+     * 국산/수입별 제조사 및 차량 수 조회
+     */
+    @GetMapping("/manufacturers")
+    @Operation(summary = "제조사별 차량 수 조회", description = "제조사별 차량 수 조회")
+    public ResponseEntity<ApiResponse<List<ManufacturerCategoryResponse>>> getCategorizedManufacturers() {
+        List<ManufacturerCategoryResponse> result = vehicleService.getCategorizedManufacturerCounts();
+        return ApiResponse.success(SuccessStatus.CAR_INFO_SUCCESS, result);
+    }
+
+    /**
+     * 특정 제조사의 모든 차명과 차량 수 조회
+     */
+    @GetMapping("/manufacturers/{manufacturer}/car-names")
+    @Operation(summary = "제조사별, 차명 별 차량 수 조회", description = "제조사별, 차명 별 차량 수 조회")
+    public ResponseEntity<ApiResponse<List<CarNameCountResponse>>> getCarNames(
+            @PathVariable String manufacturer) {
+        List<CarNameCountResponse> result = vehicleService.getAllCarNameCounts(manufacturer);
+        return ApiResponse.success(SuccessStatus.CAR_INFO_SUCCESS, result);
+    }
+
+    /**
+     * 특정 제조사와 차명의 모든 차모델과 차량 수 조회
+     */
+    @GetMapping("/manufacturers/{manufacturer}/car-names/{carName}/car-models")
+    @Operation(summary = "제조사별, 차명,차 모델 별 차량 수 조회", description = "제조사별, 차명, 차 모델 별 차량 수 조회")
+    public ResponseEntity<ApiResponse<List<CarModelCountResponse>>> getCarModels(
+            @PathVariable String manufacturer,
+            @PathVariable String carName) {
+        List<CarModelCountResponse> result = vehicleService.getAllCarModelCounts(manufacturer, carName);
+        return ApiResponse.success(SuccessStatus.CAR_INFO_SUCCESS, result);
     }
 }
