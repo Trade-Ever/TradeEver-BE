@@ -19,4 +19,9 @@ public class BidResponse{
     private LocalDateTime createdAt;
     private Long auctionId;
     private Boolean isHighestBid;
+
+    // 추가: 대기 상태 필드
+    private boolean isWaiting;
+    private Long waitUntil; // 밀리초 단위 타임스탬프
+    private String message; // "다른 입찰 처리 중입니다. 잠시만 기다려 주세요."
 }

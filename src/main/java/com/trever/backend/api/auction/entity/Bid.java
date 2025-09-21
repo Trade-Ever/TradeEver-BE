@@ -5,6 +5,8 @@ import com.trever.backend.api.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Setter
@@ -23,6 +25,9 @@ public class Bid extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bidder_id", nullable = false)
     private User bidder;
+
+    @Column(name = "bid_time")
+    private LocalDateTime bidTime;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "auction_id", nullable = false)

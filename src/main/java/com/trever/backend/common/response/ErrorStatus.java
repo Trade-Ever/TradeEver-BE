@@ -27,6 +27,7 @@ public enum ErrorStatus {
     TRANSACTION_ACCESS_DENIED(HttpStatus.BAD_REQUEST,"해당 거래에 접근 권한이 없습니다."),
     PURCHASE_REQUEST_ALREADY_EXISTS(HttpStatus.BAD_REQUEST,"이미 신청한 거래입니다."),
     CANNOT_APPLY_OWN_VEHICLE(HttpStatus.BAD_REQUEST,"자신이 등록한 차량에는 구매 신청을 할 수 없습니다."),
+    BID_CANCLED(HttpStatus.BAD_REQUEST,"입찰실패"),
 
     /**
      * 401 UNAUTHORIZED

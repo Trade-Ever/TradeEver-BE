@@ -1,11 +1,11 @@
 package com.trever.backend.api.auction.controller;
 
 import com.trever.backend.api.auction.dto.*;
-import com.trever.backend.api.auction.dto.*;
 import com.trever.backend.api.auction.entity.AuctionStatus;
 import com.trever.backend.api.auction.service.AuctionService;
 import com.trever.backend.common.exception.NotFoundException;
 import com.trever.backend.common.response.ApiResponse;
+import com.trever.backend.common.response.ErrorStatus;
 import com.trever.backend.common.response.SuccessStatus;
 import com.trever.backend.api.user.entity.User;
 import com.trever.backend.api.user.repository.UserRepository;
@@ -15,10 +15,18 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.async.DeferredResult;
+
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @Tag(name = "Auction", description = "경매 API")
+@Slf4j
 @RestController
 @RequestMapping("/api/auctions")
 @RequiredArgsConstructor
@@ -68,18 +76,58 @@ public class AuctionController {
         AuctionListResponse auctions = auctionService.getAuctions(auctionStatus, page, size);
         return ApiResponse.success(SuccessStatus.AUCTION_READ, auctions);
     }
-    
-    @Operation(summary = "입찰하기", description = "경매에 입찰을 등록합니다.")
-    @PostMapping("/bid")
-    public ResponseEntity<ApiResponse<BidResponse>> placeBid(
-            @Valid @RequestBody BidRequest request) {
-        // 실제 구현 시에는 인증된 사용자의 정보를 사용해야 함
-         User bidder = userRepository.findById(request.getBidderId())
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
-            
-        // 테스트를 위해 null을 넘기고 있지만, 실제로는 위에서 조회한 bidder를 넘겨야 함
-        BidResponse bidResponse = auctionService.placeBid(request, bidder);
-        return ApiResponse.success(SuccessStatus.BID_SUCESS, bidResponse);
+
+    /**
+     * 입찰하기 - 비동기 처리 후 결과 반환
+     */
+    @PostMapping("/bids")
+    public DeferredResult<ResponseEntity<?>> placeBid(
+            @Valid @RequestBody BidRequest bidRequest
+//            @AuthenticationPrincipal User user
+    ) {
+
+        Long auctionId = bidRequest.getAuctionId();
+        User user =  userRepository.findById(1L).orElseThrow(NotFoundException::new);
+
+        // 최대 10초까지 결과를 기다리는 DeferredResult 생성
+        DeferredResult<ResponseEntity<?>> deferredResult = new DeferredResult<>(10000L);
+
+        // 타임아웃 설정
+        deferredResult.onTimeout(() -> {
+            deferredResult.setResult(ResponseEntity.status(HttpStatus.ACCEPTED)
+                    .body("입찰 처리 중입니다. 상태를 확인해주세요."));
+        });
+
+        bidRequest.setAuctionId(auctionId);
+
+        try {
+            // 비동기 입찰 큐에 요청 등록
+            CompletableFuture<BidResponse> responseFuture =
+                    auctionService.placeBid(bidRequest, user);
+
+            // 결과가 완료되면 DeferredResult에 설정
+            responseFuture.whenComplete((result, ex) -> {
+                if (ex != null) {
+                    // 예외 발생 시
+                    log.error("입찰 처리 중 오류 발생: {}", ex.getMessage(), ex);
+                    deferredResult.setResult(ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(ex.getMessage()));
+                } else {
+                    // 정상 처리 시
+                    log.debug("입찰 처리 완료: 경매 ID={}, 입찰자={}, 입찰가={}",
+                            auctionId, user.getName(), result.getBidPrice());
+                    deferredResult.setResult(ResponseEntity.ok(result));
+                }
+            });
+
+        } catch (Exception e) {
+            // 입찰 요청 등록 자체에 실패한 경우
+            log.error("입찰 요청 처리 중 오류 발생: {}", e.getMessage(), e);
+            deferredResult.setResult(ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage()));
+        }
+
+        return deferredResult;
     }
     
     @Operation(summary = "경매 취소", description = "경매를 취소합니다. 관리자 또는 판매자만 가능합니다.")

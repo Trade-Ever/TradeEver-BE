@@ -179,6 +179,8 @@ public class VehicleService {
                 .transmission(vehicle.getTransmission())
                 .accidentHistory(vehicle.getAccidentHistory())
                 .accidentDescription(vehicle.getAccidentDescription())
+                .description(vehicle.getDescription())
+                .favoriteCount(vehicle.getFavoriteCount())
                 .vehicleStatus(vehicle.getVehicleStatus().getDisplayName())
                 .engineCc(vehicle.getEngineCc())
                 .horsepower(vehicle.getHorsepower())
@@ -189,6 +191,7 @@ public class VehicleService {
                 .options(options) // 옵션 목록 추가
                 .photos(photos)
                 .sellerId(user.getId())
+                .sellerPhone(user.getPhone())
                 .sellerName(user.getName())
                 .updatedAt(vehicle.getUpdatedAt())
                 .createdAt(vehicle.getCreatedAt())
