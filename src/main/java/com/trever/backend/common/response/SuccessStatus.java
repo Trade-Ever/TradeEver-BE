@@ -46,6 +46,9 @@ public enum SuccessStatus {
     UPDATE_PROFILE_SUCCESS(HttpStatus.OK, "프로필 수정 성공"),
     RECENT_VIEW_ADD_SUCCESS(HttpStatus.OK, "최근 본 차량 추가 성공"),
     RECENT_VIEW_LIST_SUCCESS(HttpStatus.OK, "최근 본 차량 조회 성공"),
+    RECENT_SEARCH_ADD_SUCCESS(HttpStatus.OK, "최근 검색어 추가 성공"),
+    RECENT_SEARCH_LIST_SUCCESS(HttpStatus.OK, "최근 검색어 조회 성공"),
+    RECENT_SEARCH_DELETE_SUCCESS(HttpStatus.OK, "최근 검색어 삭제 성공"),
 
 
 

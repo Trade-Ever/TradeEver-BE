@@ -2,12 +2,11 @@ package com.trever.backend.api.vehicle.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.trever.backend.api.recentview.service.RecentViewService;
+import com.trever.backend.api.recent.service.RecentSearchService;
+import com.trever.backend.api.recent.service.RecentViewService;
 import com.trever.backend.api.user.entity.User;
 import com.trever.backend.api.user.repository.UserRepository;
-import com.trever.backend.api.user.service.UserService;
 import com.trever.backend.common.exception.NotFoundException;
-import com.trever.backend.api.vehicle.entity.VehicleStatus;
 import com.trever.backend.common.response.ApiResponse;
 import com.trever.backend.common.response.ErrorStatus;
 import com.trever.backend.common.response.SuccessStatus;
@@ -26,7 +25,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @Tag(name = "Vehicle", description = "차량 관리 API")
@@ -38,21 +36,24 @@ public class VehicleController {
     private final ObjectMapper objectMapper;
     private final UserRepository userRepository;
     private final RecentViewService recentViewService;
+    private final RecentSearchService recentSearchService;
     
     @Operation(summary = "차량 등록", description = "새로운 차량을 등록합니다.")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<Long>> createVehicle(
             @RequestPart("request") String requestString,
-            @RequestPart(value = "photos", required = false) List<MultipartFile> photos) {
+            @RequestPart(value = "photos", required = false) List<MultipartFile> photos,
+            @AuthenticationPrincipal UserDetails userDetails) {
         
         try {
             // JSON 문자열을 객체로 변환
             VehicleCreateRequest request = objectMapper.readValue(requestString, VehicleCreateRequest.class);
             
-            // TODO: 실제 구현 시에는 인증된 사용자의 ID를 사용해야 함
-            Long sellerId = 1L; // 테스트용 판매자 ID
+            String email = userDetails.getUsername();
+            User seller = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
             
-            Long vehicleId = vehicleService.createVehicle(request, photos, sellerId);
+            Long vehicleId = vehicleService.createVehicle(request, photos, seller.getId());
             return ApiResponse.success(SuccessStatus.VEHICLE_CREATED, vehicleId);
 
         } catch (JsonProcessingException e) {
@@ -65,18 +66,22 @@ public class VehicleController {
     @Operation(summary = "차량 상세 조회", description = "차량 상세 정보를 조회합니다.")
     @GetMapping("/{vehicleId}")
     public ResponseEntity<ApiResponse<VehicleResponse>> getVehicleDetail(
-            @PathVariable Long vehicleId,
+            @PathVariable("vehicleId") Long vehicleId,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        String email = userDetails.getUsername();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+        Long loginUserId = null;
+        if (userDetails != null) {
+            String email = userDetails.getUsername();
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+            loginUserId = user.getId();
+        }
 
-        VehicleResponse vehicle = vehicleService.getVehicleDetail(vehicleId, user.getId());
+        VehicleResponse vehicle = vehicleService.getVehicleDetail(vehicleId, loginUserId);
         return ApiResponse.success(SuccessStatus.CAR_INFO_SUCCESS, vehicle);
     }
     
-    @Operation(summary = "차량 목록 조회", description = "차량 목록을 조회합니다.")
+    @Operation(summary = "차량 목록", description = "차량 목록을 조회합니다.")
     @GetMapping
     public ResponseEntity<ApiResponse<VehicleListResponse>> getVehicles(
             @RequestParam(defaultValue = "0") int page,
@@ -117,4 +122,28 @@ public class VehicleController {
 //    public ResponseEntity<ApiResponse<VehicleStatus[]>> getVehicleStatuses() {
 //        return ApiResponse.success(SuccessStatus.BID_SUCESS, VehicleStatus.values());
 //    }
+
+    @Operation(summary = "차량 검색", description = "키워드(차명, 제조사, 모델, 설명)로 차량을 검색합니다.")
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<VehicleListResponse>> searchVehicles(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) Boolean isAuction,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        Long loginUserId = null;
+        if (userDetails != null) {
+            String email = userDetails.getUsername();
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+            loginUserId = user.getId();
+
+            // 최근 검색어 저장
+            recentSearchService.addSearch(loginUserId, keyword);
+        }
+        VehicleListResponse response = vehicleService.searchVehicles(keyword, page, size, sortBy, isAuction);
+        return ApiResponse.success(SuccessStatus.CAR_INFO_SUCCESS, response);
+    }
 }

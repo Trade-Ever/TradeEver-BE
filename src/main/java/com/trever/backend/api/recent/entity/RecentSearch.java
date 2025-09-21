@@ -1,22 +1,21 @@
-package com.trever.backend.api.recentview.entity;
+package com.trever.backend.api.recent.entity;
 
 import com.trever.backend.api.user.entity.User;
-import com.trever.backend.api.vehicle.entity.Vehicle;
 import com.trever.backend.common.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
 @Table(
-        name = "recent_views",
-        uniqueConstraints = {@UniqueConstraint(columnNames = {"user_id", "vehicle_id"})}
+        name = "recent_searches",
+        uniqueConstraints = {@UniqueConstraint(columnNames = {"user_id", "keyword"})}
 )
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class RecentView extends BaseTimeEntity {
+public class RecentSearch extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,7 +25,6 @@ public class RecentView extends BaseTimeEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "vehicle_id", nullable = false)
-    private Vehicle vehicle;
+    @Column(nullable = false)
+    private String keyword;
 }

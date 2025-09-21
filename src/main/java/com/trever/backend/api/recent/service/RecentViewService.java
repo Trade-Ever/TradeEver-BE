@@ -1,20 +1,18 @@
-package com.trever.backend.api.recentview.service;
+package com.trever.backend.api.recent.service;
 
-import com.trever.backend.api.recentview.entity.RecentView;
-import com.trever.backend.api.recentview.repository.RecentViewRepository;
+import com.trever.backend.api.recent.entity.RecentView;
+import com.trever.backend.api.recent.repository.RecentViewRepository;
 import com.trever.backend.api.user.entity.User;
 import com.trever.backend.api.user.repository.UserRepository;
 import com.trever.backend.api.vehicle.dto.VehicleListResponse;
 import com.trever.backend.api.vehicle.entity.Vehicle;
 import com.trever.backend.api.vehicle.repository.VehicleRepository;
-import com.trever.backend.api.vehicle.service.VehicleService;
 import com.trever.backend.common.exception.NotFoundException;
 import com.trever.backend.common.response.ErrorStatus;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -31,11 +29,9 @@ public class RecentViewService {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_VEHICLE.getMessage()));
 
-        // 중복이면 삭제
-        recentViewRepository.findByUserIdOrderByUpdatedAtDesc(userId).stream()
-                .filter(rv -> rv.getVehicle().getId().equals(vehicleId))
-                .findFirst()
-                .ifPresent(recentViewRepository::delete);
+        // 같은 차량 있으면 삭제
+        recentViewRepository.deleteByUserIdAndVehicleId(userId, vehicleId);
+        recentViewRepository.flush();
 
         // 새로 저장
         recentViewRepository.save(

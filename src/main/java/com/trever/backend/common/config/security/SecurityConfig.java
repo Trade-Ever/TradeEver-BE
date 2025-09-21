@@ -76,11 +76,17 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/users/signup",
                                 "/api/v1/users/reissue",
-                                "/api/v1/users/login",
-                                "/api/**"
+                                "/api/v1/users/login"
                         ).permitAll()
 
-
+                        // Public: 차량 관련
+                        .requestMatchers(
+                                "/api/cars/**",
+                                "/api/vehicles",
+                                "/api/vehicles/search",
+                                "/api/vehicles/**",
+                                "/api/vehicle-options/**"
+                        ).permitAll()
 
                         // 나머지 요청은 인증 필요
                         .anyRequest().authenticated()

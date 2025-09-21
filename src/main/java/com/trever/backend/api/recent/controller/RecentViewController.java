@@ -1,9 +1,8 @@
-package com.trever.backend.api.recentview.controller;
+package com.trever.backend.api.recent.controller;
 
-import com.trever.backend.api.recentview.service.RecentViewService;
+import com.trever.backend.api.recent.service.RecentViewService;
 import com.trever.backend.api.user.entity.User;
 import com.trever.backend.api.user.repository.UserRepository;
-import com.trever.backend.api.user.service.UserService;
 import com.trever.backend.api.vehicle.dto.VehicleListResponse;
 import com.trever.backend.common.exception.NotFoundException;
 import com.trever.backend.common.response.ApiResponse;
