@@ -52,6 +52,16 @@ public class TransactionService {
         User buyer = userRepository.findById(buyerId)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
+        // 본인 매물 신청 방지
+        if (vehicle.getSeller().getId().equals(buyerId)) {
+            throw new BadRequestException(ErrorStatus.CANNOT_APPLY_OWN_VEHICLE.getMessage());
+        }
+
+        // 차량 상태 확인 (거래 중, 종료된 차량은 신청 불가)
+        if (vehicle.getVehicleStatus() != VehicleStatus.ACTIVE) {
+            throw new BadRequestException("이미 거래 중이거나 종료된 차량에는 구매 신청을 할 수 없습니다.");
+        }
+
         // 중복 신청 방지
         boolean alreadyApplied = purchaseRequestRepository.existsByVehicleIdAndBuyerId(vehicleId, buyerId);
         if (alreadyApplied) {

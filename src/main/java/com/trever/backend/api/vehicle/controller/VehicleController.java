@@ -96,12 +96,14 @@ public class VehicleController {
     @Operation(summary = "차량 삭제", description = "차량을 삭제합니다. 자신이 등록한 차량만 삭제할 수 있습니다.")
     @DeleteMapping("/{vehicleId}")
     public ResponseEntity<ApiResponse<Void>> deleteVehicle(
-            @PathVariable Long vehicleId) {
-        
-        // TODO: 실제 구현 시에는 인증된 사용자의 ID를 사용해야 함
-        Long userId = 1L; // 테스트용 사용자 ID
-        
-        vehicleService.deleteVehicle(vehicleId, userId);
+            @PathVariable Long vehicleId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String email = userDetails.getUsername();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
+        vehicleService.deleteVehicle(vehicleId, user.getId());
         return ApiResponse.success_only(SuccessStatus.CAR_INFO_SUCCESS);
     }
 

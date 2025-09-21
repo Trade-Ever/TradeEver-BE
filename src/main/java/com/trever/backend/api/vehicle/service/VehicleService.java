@@ -238,8 +238,12 @@ public class VehicleService {
         if (!vehicle.getSeller().getId().equals(userId)) {
             throw new BadRequestException("자신이 등록한 차량만 삭제할 수 있습니다.");
         }
-        
+
         // TODO: 경매가 진행 중인 경우 삭제 불가 처리 추가
+        // 거래 중이거나 경매 등록된 차량 삭제 불가
+        if (vehicle.getVehicleStatus() != VehicleStatus.ACTIVE) {
+            throw new BadRequestException("거래 중이거나 경매 등록된 차량은 삭제할 수 없습니다.");
+        }
         
         vehicleRepository.delete(vehicle);
     }
