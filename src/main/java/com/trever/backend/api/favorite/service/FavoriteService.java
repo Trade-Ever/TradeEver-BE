@@ -68,6 +68,11 @@ public class FavoriteService {
             throw new BadRequestException(ErrorStatus.FAVORITE_ALREADY_EXISTS.getMessage());
         }
 
+        //자신의 차량에 찜 방지
+        if(user.getId().equals(vehicle.getSeller().getId())) {
+            throw new BadRequestException(ErrorStatus.FAVORITE_FORBIDDEN.getMessage());
+        }
+
         Favorite favorite = Favorite.builder()
                 .user(user)
                 .vehicle(vehicle)

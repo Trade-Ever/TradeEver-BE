@@ -90,10 +90,6 @@ public class SecurityConfig {
                                 "/api/vehicle-options/**"
                         ).permitAll()
 
-                        //임시 세팅
-                        .requestMatchers(
-                                "/api/auctions/**"
-                        ).permitAll()
 
                         // 나머지 요청은 인증 필요
                         .anyRequest().authenticated()

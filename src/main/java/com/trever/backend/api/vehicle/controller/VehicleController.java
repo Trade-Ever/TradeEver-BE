@@ -131,21 +131,22 @@ public class VehicleController {
     @PostMapping("/search")
     @Operation(summary = "차량 검색", description = "차량을 검색합니다.")
     public ResponseEntity<ApiResponse<VehicleListResponse>> searchVehicles(
-            @RequestBody VehicleSearchRequest request
+            @RequestBody VehicleSearchRequest request,
+            @AuthenticationPrincipal UserDetails userDetails
     ) {
         VehicleListResponse result = vehicleService.searchByFilter(request);
 
-        //        Long loginUserId = null;
-//        if (userDetails != null) {
-//            String email = userDetails.getUsername();
-//            User user = userRepository.findByEmail(email)
-//                    .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
-//            loginUserId = user.getId();
-//
-//            // 최근 검색어 저장
-//            recentSearchService.addSearch(loginUserId, request.getKeyword());
-//        }
-//
+        Long loginUserId = null;
+        if (userDetails != null) {
+            String email = userDetails.getUsername();
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+            loginUserId = user.getId();
+
+            // 최근 검색어 저장
+            recentSearchService.addSearch(loginUserId, request.getKeyword());
+        }
+
 
         return ApiResponse.success(SuccessStatus.CAR_INFO_SUCCESS, result);
     }

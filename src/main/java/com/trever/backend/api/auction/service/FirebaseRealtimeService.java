@@ -32,8 +32,8 @@ public class FirebaseRealtimeService {
             auctionData.put("id", auction.getId());
             auctionData.put("startPrice", auction.getStartPrice());
             auctionData.put("currentBidPrice", auction.getCurrentBidPrice());
-            auctionData.put("startAt", auction.getStartAt().toEpochSecond(ZoneOffset.UTC));
-            auctionData.put("endAt", auction.getEndAt().toEpochSecond(ZoneOffset.UTC));
+            auctionData.put("startAt", auction.getStartAt().toString());
+            auctionData.put("endAt", auction.getEndAt().toString());
             auctionData.put("status", auction.getStatus().name());
             auctionData.put("vehicleId", auction.getVehicle().getId());
             
