@@ -56,38 +56,60 @@ public class FavoriteService {
                 .toList();
     }
 
-    // 찜 추가
-    public void addFavorite(Long userId, Long vehicleId) {
+//    // 찜 추가
+//    public void addFavorite(Long userId, Long vehicleId) {
+//        User user = userRepository.findById(userId)
+//                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+//        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+//                .orElseThrow(() -> new NotFoundException(ErrorStatus.VEHICLE_NOT_FOUND.getMessage()));
+//
+//        // 중복 찜 방지
+//        if (favoriteRepository.existsByUserAndVehicle(user, vehicle)) {
+//            throw new BadRequestException(ErrorStatus.FAVORITE_ALREADY_EXISTS.getMessage());
+//        }
+//
+//        Favorite favorite = Favorite.builder()
+//                .user(user)
+//                .vehicle(vehicle)
+//                .build();
+//
+//        favoriteRepository.save(favorite);
+//    }
+//
+//    // 찜 삭제
+//    public void removeFavorite(Long userId, Long vehicleId) {
+//        User user = userRepository.findById(userId)
+//                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+//        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+//                .orElseThrow(() -> new NotFoundException(ErrorStatus.VEHICLE_NOT_FOUND.getMessage()));
+//
+//        favoriteRepository.deleteByUserAndVehicle(user, vehicle);
+//    }
+
+    @Transactional
+    public boolean toggleFavorite(Long userId, Long vehicleId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.VEHICLE_NOT_FOUND.getMessage()));
-
-        // 중복 찜 방지
-        if (favoriteRepository.existsByUserAndVehicle(user, vehicle)) {
-            throw new BadRequestException(ErrorStatus.FAVORITE_ALREADY_EXISTS.getMessage());
-        }
 
         //자신의 차량에 찜 방지
         if(user.getId().equals(vehicle.getSeller().getId())) {
             throw new BadRequestException(ErrorStatus.FAVORITE_FORBIDDEN.getMessage());
         }
 
-        Favorite favorite = Favorite.builder()
-                .user(user)
-                .vehicle(vehicle)
-                .build();
+        boolean exists = favoriteRepository.existsByUserIdAndVehicleId(userId, vehicleId);
 
-        favoriteRepository.save(favorite);
-    }
-
-    // 찜 삭제
-    public void removeFavorite(Long userId, Long vehicleId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
-        Vehicle vehicle = vehicleRepository.findById(vehicleId)
-                .orElseThrow(() -> new NotFoundException(ErrorStatus.VEHICLE_NOT_FOUND.getMessage()));
-
-        favoriteRepository.deleteByUserAndVehicle(user, vehicle);
+        if (exists) {
+            // 이미 찜했으면 삭제
+            favoriteRepository.deleteByUserIdAndVehicleId(userId, vehicleId);
+            vehicle.decreaseFavoriteCount();
+            return false; // 찜 해제
+        } else {
+            // 찜 추가
+            favoriteRepository.save(Favorite.builder().user(user).vehicle(vehicle).build());
+            vehicle.increaseFavoriteCount();
+            return true; // 찜 등록
+        }
     }
 }

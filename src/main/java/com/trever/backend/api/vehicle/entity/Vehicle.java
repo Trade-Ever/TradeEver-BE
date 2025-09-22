@@ -60,7 +60,7 @@ public class Vehicle extends BaseTimeEntity {
     
     private Long auctionId;
     
-    private Integer favoriteCount;
+    private Integer favoriteCount = 0;
 
     // 차종 필드 추가
     @Enumerated(EnumType.STRING)
@@ -91,4 +91,14 @@ public class Vehicle extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
+
+    public void increaseFavoriteCount() {
+        this.favoriteCount++;
+    }
+
+    public void decreaseFavoriteCount() {
+        if (this.favoriteCount > 0) {
+            this.favoriteCount--;
+        }
+    }
 }

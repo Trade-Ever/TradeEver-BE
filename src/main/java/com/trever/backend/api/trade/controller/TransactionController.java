@@ -101,7 +101,7 @@ public class TransactionController {
         return ApiResponse.success(SuccessStatus.TRANSACTION_GET_SUCCESS, transactionResponseDTO);
     }
 
-    @Operation(summary = "구매 내역 조회 API", description = "사용자가 구매한 거래 내역을 조회합니다.")
+    @Operation(summary = "구매 내역 조회 API", description = "사용자가 구매 완료한 거래 내역을 조회합니다.")
     @GetMapping("/my/purchases")
     public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> getMyPurchases(
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -111,10 +111,10 @@ public class TransactionController {
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
         List<TransactionResponseDTO> purchases = transactionService.getMyPurchases(user.getId());
-        return ApiResponse.success(SuccessStatus.TRANSACTION_GET_SUCCESS, purchases);
+        return ApiResponse.success(SuccessStatus.TRANSACTION_LIST_SUCCESS, purchases);
     }
 
-    @Operation(summary = "판매 내역 조회 API", description = "사용자가 판매한 거래 내역을 조회합니다.")
+    @Operation(summary = "판매 내역 조회 API", description = "사용자가 판매 완료한 거래 내역을 조회합니다.")
     @GetMapping("/my/sales")
     public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> getMySales(
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -124,7 +124,19 @@ public class TransactionController {
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
         List<TransactionResponseDTO> sales = transactionService.getMySales(user.getId());
-        return ApiResponse.success(SuccessStatus.TRANSACTION_GET_SUCCESS, sales);
+        return ApiResponse.success(SuccessStatus.TRANSACTION_LIST_SUCCESS, sales);
     }
 
+    @Operation(summary = "진행 중 거래 내역 (전체)", description = "내가 참여한 모든 진행 중 거래를 조회합니다.")
+    @GetMapping("/my/in-progress")
+    public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> getMyInProgress(
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String email = userDetails.getUsername();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
+        List<TransactionResponseDTO> response = transactionService.getMyInProgress(user.getId());
+        return ApiResponse.success(SuccessStatus.TRANSACTION_LIST_SUCCESS, response);
+    }
 }

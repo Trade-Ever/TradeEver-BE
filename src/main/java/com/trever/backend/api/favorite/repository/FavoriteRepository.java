@@ -14,4 +14,6 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
 
     List<Favorite> findByUserOrderByCreatedAtDesc(User user);
 
+    boolean existsByUserIdAndVehicleId(Long userId, Long vehicleId);
+    void deleteByUserIdAndVehicleId(Long userId, Long vehicleId);
 }

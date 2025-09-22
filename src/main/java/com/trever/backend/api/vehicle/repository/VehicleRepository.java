@@ -22,6 +22,8 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long>,VehicleR
     
     Page<Vehicle> findBySellerId(Long sellerId, Pageable pageable);
 
+    Page<Vehicle> findByVehicleStatusAndIsAuction(VehicleStatus status, char isAuction, Pageable pageable);
+
     @Modifying
     @Query("UPDATE Vehicle v SET v.vehicleStatus = :status WHERE v.id = :vehicleId")
     void updateVehicleStatus(@Param("vehicleId") Long vehicleId, @Param("status") VehicleStatus status);

@@ -21,6 +21,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.Collections;
 
 @Configuration
@@ -110,7 +111,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(Collections.singletonList("http://localhost:8080")); // 허용할 Origin 딱 하나
+        config.setAllowedOrigins(Arrays.asList(
+                "http://localhost:8080",       // 로컬에서 Swagger 띄운 경우
+                "https://trever.store",        // 배포 API 1
+                "https://www.trever.store"   // 배포 API 2
+        )); // 허용할 Origin
         config.setAllowedMethods(Collections.singletonList("*")); // 모든 HTTP 메서드 허용
         config.setAllowedHeaders(Collections.singletonList("*")); // 모든 헤더 허용
         config.setAllowCredentials(true); // 인증 정보 포함 허용
