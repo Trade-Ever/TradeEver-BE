@@ -4,6 +4,7 @@ import com.trever.backend.api.trade.dto.ContractResponseDTO;
 import com.trever.backend.api.trade.entity.Contract;
 import com.trever.backend.api.trade.entity.ContractStatus;
 import com.trever.backend.api.trade.entity.Transaction;
+import com.trever.backend.api.trade.entity.TransactionStatus;
 import com.trever.backend.api.trade.repository.ContractRepository;
 import com.trever.backend.api.trade.repository.TransactionRepository;
 import com.trever.backend.api.user.entity.UserProfile;
@@ -54,15 +55,59 @@ public class ContractService {
         // 신규 게약 생성
         Contract contract = Contract.builder()
                 .transaction(transaction)
-                .status(ContractStatus.PENDING)
-                .signedAt(null)
-                .contractPdfUrl(null)
+                .status(ContractStatus.COMPLETED)
+                .signedAt(LocalDateTime.now())
+//                .contractPdfUrl(null)
                 .build();
 
         transaction.setContract(contract);
         contractRepository.save(contract);
 
+        // PDF 생성 로직 바로 실행
+        generatePdf(contract, transaction);
+
+        // 거래 상태도 완료 처리
+        Vehicle vehicle = transaction.getVehicle();
+        vehicleRepository.updateVehicleStatus(vehicle.getId(), VehicleStatus.ENDED);
+
+        transaction.setStatus(TransactionStatus.COMPLETED);
+        transaction.setCompletedAt(LocalDateTime.now());
+        transactionRepository.save(transaction);
+
         return ContractResponseDTO.from(contract);
+    }
+
+    private void generatePdf(Contract contract, Transaction transaction) {
+        Vehicle vehicle = transaction.getVehicle();
+
+        // 프로필 등 필요한 데이터 조회
+        UserProfile buyerProfile = userProfileRepository.findByUser(transaction.getBuyer()).orElse(null);
+        UserProfile sellerProfile = userProfileRepository.findByUser(transaction.getSeller()).orElse(null);
+
+        Context context = new Context();
+        context.setVariable("transaction", transaction);
+        context.setVariable("vehicle", vehicle);
+        context.setVariable("contract", contract);
+        context.setVariable("buyerProfile", buyerProfile);
+        context.setVariable("sellerProfile", sellerProfile);
+
+        String htmlContent = templateEngine.process("contract", context);
+        contract.setContractData(htmlContent);
+
+        try {
+            String uploadDir = "uploads/contracts/";
+            Files.createDirectories(Paths.get(uploadDir));
+
+            String fileName = "contract_" + contract.getId() + ".pdf";
+            String filePath = uploadDir + fileName;
+
+            PdfGenerator.generatePdfFromHtml(htmlContent, filePath);
+
+            contract.setContractPdfUrl("/api/v1/contracts/" + contract.getId() + "/pdf");
+            contractRepository.save(contract);
+        } catch (Exception e) {
+            throw new InternalServerException("PDF 생성 실패");
+        }
     }
 
     // 계약 조회
@@ -80,100 +125,21 @@ public class ContractService {
         return ContractResponseDTO.from(contract);
     }
 
-    // 구매자 서명
-    @Transactional
-    public ContractResponseDTO signAsBuyer(Long contractId, Long userId) {
-        Contract contract = getValidContract(contractId, userId, true);
-        contract.signAsBuyer(); // 엔티티 메서드 사용
-        checkIfFullySigned(contract);
-        return ContractResponseDTO.from(contract);
-    }
-
-    // 판매자 서명
-    @Transactional
-    public ContractResponseDTO signAsSeller(Long contractId, Long userId) {
-        Contract contract = getValidContract(contractId, userId, false);
-        contract.signAsSeller();
-        checkIfFullySigned(contract);
-        return ContractResponseDTO.from(contract);
-    }
-
-    // 양쪽 다 서명했을 때 최종 처리
-    private void checkIfFullySigned(Contract contract) {
-        if (contract.getStatus() == ContractStatus.COMPLETED) {
-            Transaction transaction = contract.getTransaction();
-            Vehicle vehicle = transaction.getVehicle();
-
-            if (vehicle == null) {
-                throw new NotFoundException(ErrorStatus.VEHICLE_NOT_FOUND.getMessage());
-            }
-
-            Long price = transaction.getFinalPrice();
-            Long buyerId = transaction.getBuyer().getId();
-            Long sellerId = transaction.getSeller().getId();
-
-            // 돈 이동
-            userWalletService.transfer(buyerId, sellerId, price);
-
-            // 구매자, 판매자 프로필 정보 조회
-            UserProfile buyerProfile = userProfileRepository.findByUser(transaction.getBuyer())
-                    .orElse(null);
-            UserProfile sellerProfile = userProfileRepository.findByUser(transaction.getSeller())
-                    .orElse(null);
-
-            // 계약서 HTML 생성
-            Context context = new Context();
-            context.setVariable("transaction", transaction);
-            context.setVariable("vehicle", vehicle);
-            context.setVariable("contract", contract);
-            context.setVariable("buyerProfile", buyerProfile);
-            context.setVariable("sellerProfile", sellerProfile);
-
-            String htmlContent = templateEngine.process("contract", context);
-            contract.setContractData(htmlContent);
-
-            // PDF 생성
-            String uploadDir = "uploads/contracts/";
-            String fileName = "contract_" + contract.getId() + ".pdf";
-            String filePath = uploadDir + fileName;
-
-            try {
-                Files.createDirectories(Paths.get(uploadDir));
-
-                // 기존 파일 삭제 (있으면 지움 → 덮어쓰기)
-                Files.deleteIfExists(Paths.get(filePath));
-                PdfGenerator.generatePdfFromHtml(htmlContent, filePath);
-
-                // URL 저장
-                // API 경로 저장 (앱에서 바로 호출 가능)
-                contract.setContractPdfUrl("/api/v1/contracts/" + contract.getId() + "/pdf");
-                contract.setSignedAt(LocalDateTime.now());
-            } catch (Exception e) {
-                throw new InternalServerException(ErrorStatus.PASSPORT_SIGN_ERROR_EXCEPTION.getMessage());
-            }
-
-            // Transaction 상태 업데이트
-            vehicleRepository.updateVehicleStatus(vehicle.getId(),VehicleStatus.ENDED);
-            transaction.setStatus(COMPLETED);
-            transaction.setCompletedAt(LocalDateTime.now());
-            transactionRepository.save(transaction);
-            contractRepository.save(contract);
-        }
-    }
-
-    private Contract getValidContract(Long contractId, Long userId, boolean isBuyer) {
-        Contract contract = contractRepository.findById(contractId)
-                .orElseThrow(() -> new NotFoundException(ErrorStatus.NOT_FOUND_CONTRACT_EXCEPTION.getMessage()));
-
-        Transaction tx = contract.getTransaction();
-        Long expectedId = isBuyer ? tx.getBuyer().getId() : tx.getSeller().getId();
-
-        if (!expectedId.equals(userId)) {
-            throw new BadRequestException(isBuyer
-                    ? ErrorStatus.INVALID_BUYER_SIGNATURE.getMessage()
-                    : ErrorStatus.INVALID_SELLER_SIGNATURE.getMessage());
-        }
-
-        return contract;
-    }
+//    // 구매자 서명
+//    @Transactional
+//    public ContractResponseDTO signAsBuyer(Long contractId, Long userId) {
+//        Contract contract = getValidContract(contractId, userId, true);
+//        contract.signAsBuyer(); // 엔티티 메서드 사용
+//        checkIfFullySigned(contract);
+//        return ContractResponseDTO.from(contract);
+//    }
+//
+//    // 판매자 서명
+//    @Transactional
+//    public ContractResponseDTO signAsSeller(Long contractId, Long userId) {
+//        Contract contract = getValidContract(contractId, userId, false);
+//        contract.signAsSeller();
+//        checkIfFullySigned(contract);
+//        return ContractResponseDTO.from(contract);
+//    }
 }

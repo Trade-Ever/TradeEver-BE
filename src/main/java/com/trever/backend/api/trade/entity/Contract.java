@@ -36,23 +36,23 @@ public class Contract extends BaseTimeEntity {
 
     private LocalDateTime signedAt;
 
-    // 구매자가 서명했을 때 호출하는 메서드
-    public void signAsBuyer() {
-        if (status == ContractStatus.PENDING) {
-            status = ContractStatus.WAITING_FOR_SELLER;
-        } else if (status == ContractStatus.WAITING_FOR_BUYER) {
-            status = ContractStatus.COMPLETED;
-            signedAt = LocalDateTime.now();
-        }
-    }
+//    // 구매자가 서명했을 때 호출하는 메서드
+//    public void signAsBuyer() {
+//        if (status == ContractStatus.PENDING) {
+//            status = ContractStatus.WAITING_FOR_SELLER;
+//        } else if (status == ContractStatus.WAITING_FOR_BUYER) {
+//            status = ContractStatus.COMPLETED;
+//            signedAt = LocalDateTime.now();
+//        }
+//    }
 
-    // 판매자가 서명했을 때 호출하는 메서드
-    public void signAsSeller() {
-        if (status == ContractStatus.PENDING) {
-            status = ContractStatus.WAITING_FOR_BUYER;
-        } else if (status == ContractStatus.WAITING_FOR_SELLER) {
-            status = ContractStatus.COMPLETED;
-            signedAt = LocalDateTime.now();
-        }
-    }
+//    // 판매자가 서명했을 때 호출하는 메서드
+//    public void signAsSeller() {
+//        if (status == ContractStatus.PENDING) {
+//            status = ContractStatus.WAITING_FOR_BUYER;
+//        } else if (status == ContractStatus.WAITING_FOR_SELLER) {
+//            status = ContractStatus.COMPLETED;
+//            signedAt = LocalDateTime.now();
+//        }
+//    }
 }
