@@ -6,6 +6,7 @@ import com.trever.backend.api.user.entity.User;
 import com.trever.backend.api.user.repository.UserRepository;
 import com.trever.backend.api.vehicle.dto.VehicleListResponse;
 import com.trever.backend.api.vehicle.entity.Vehicle;
+import com.trever.backend.api.vehicle.entity.VehicleStatus;
 import com.trever.backend.api.vehicle.repository.VehicleRepository;
 import com.trever.backend.common.exception.NotFoundException;
 import com.trever.backend.common.response.ErrorStatus;
@@ -45,9 +46,10 @@ public class RecentViewService {
     public List<VehicleListResponse.VehicleSummary> getRecentViews(Long userId) {
         return recentViewRepository.findByUserIdOrderByUpdatedAtDesc(userId)
                 .stream()
-                .map(rv -> {
-                    Vehicle v = rv.getVehicle();
-                    return VehicleListResponse.VehicleSummary.builder()
+                .map(RecentView::getVehicle)
+                .filter(vehicle -> vehicle.getVehicleStatus() == VehicleStatus.ACTIVE)
+                .limit(20)
+                .map(v -> VehicleListResponse.VehicleSummary.builder()
                             .id(v.getId())
                             .carNumber(v.getCarNumber())
                             .carName(v.getCarName())
@@ -63,8 +65,8 @@ public class RecentViewService {
                             .representativePhotoUrl(v.getRepresentativePhotoUrl())
                             .favoriteCount(v.getFavoriteCount())
                             .createdAt(v.getCreatedAt())
-                            .build();
-                })
+                            .build()
+                )
                 .toList();
     }
 }

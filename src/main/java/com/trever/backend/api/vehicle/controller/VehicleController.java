@@ -15,6 +15,7 @@ import com.trever.backend.api.vehicle.service.VehicleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +30,7 @@ import java.util.List;
 @Tag(name = "Vehicle", description = "차량 관리 API")
 @RequestMapping("/api/vehicles")
 @RequiredArgsConstructor
+@Slf4j
 public class VehicleController {
 
     private final VehicleService vehicleService;
@@ -69,12 +71,15 @@ public class VehicleController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         Long loginUserId = null;
+        String email = null;
         if (userDetails != null) {
-            String email = userDetails.getUsername();
+            email = userDetails.getUsername();
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
             loginUserId = user.getId();
         }
+
+        log.info("loginUserId={}, email={}", loginUserId, email);
 
         VehicleResponse vehicle = vehicleService.getVehicleDetail(vehicleId, loginUserId);
         return ApiResponse.success(SuccessStatus.CAR_INFO_SUCCESS, vehicle);

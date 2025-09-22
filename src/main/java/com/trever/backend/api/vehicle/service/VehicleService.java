@@ -51,7 +51,6 @@ public class VehicleService {
     private final CarModelService carModelService;
     private final UserProfileRepository userProfileRepository;
     private final FavoriteRepository favoriteRepository;
-    
     /**
      * 새 차량 등록
      */
@@ -184,8 +183,7 @@ public class VehicleService {
                isSeller = true;
             }
         }
-
-
+      
         // VehicleResponse에 대표 사진 URL 포함
         return VehicleResponse.builder()
                 .id(vehicle.getId())
@@ -229,12 +227,17 @@ public class VehicleService {
 
         Page<Vehicle> vehiclesPage;
         if (isAuction != null) {
-            vehiclesPage = vehicleRepository.findByIsAuction(
+            vehiclesPage = vehicleRepository.findByVehicleStatusAndIsAuction(
+                    VehicleStatus.ACTIVE,
                     isAuction ? 'Y' : 'N',
                     pageable
             );
         } else {
-            vehiclesPage = vehicleRepository.findAll(pageable);
+            vehiclesPage = vehicleRepository.findByVehicleStatusAndIsAuction(
+                    VehicleStatus.ACTIVE,
+                    'N',
+                    pageable
+            );
         }
 
         // 현재 사용자가 찜한 차량 ID 목록 조회

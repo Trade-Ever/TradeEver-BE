@@ -23,5 +23,7 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
 
     // 사용자 ID와 차량 ID로 찜 정보 조회
     Favorite findByUserIdAndVehicleId(Long userId, Long vehicleId);
+  
+    void deleteByUserIdAndVehicleId(Long userId, Long vehicleId);
 
 }
