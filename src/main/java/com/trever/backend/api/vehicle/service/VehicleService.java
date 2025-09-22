@@ -234,15 +234,25 @@ public class VehicleService {
 
         Page<Vehicle> vehiclesPage;
         if (isAuction != null) {
-            vehiclesPage = vehicleRepository.findByVehicleStatusAndIsAuction(
-                    VehicleStatus.ACTIVE,
-                    isAuction ? 'Y' : 'N',
-                    pageable
-            );
+            if (isAuction) {
+                // 경매 차량 조회 - AUCTIONS 상태와 isAuction='Y'인 차량 모두 포함
+                vehiclesPage = vehicleRepository.findByVehicleStatusInAndIsAuction(
+                        List.of(VehicleStatus.ACTIVE, VehicleStatus.AUCTIONS),
+                        'Y',
+                        pageable
+                );
+            } else {
+                // 일반 판매 차량 조회 - ACTIVE 상태의 isAuction='N' 차량만
+                vehiclesPage = vehicleRepository.findByVehicleStatusInAndIsAuction(
+                        List.of(VehicleStatus.ACTIVE, VehicleStatus.AUCTIONS),
+                        'N',
+                        pageable
+                );
+            }
         } else {
-            vehiclesPage = vehicleRepository.findByVehicleStatusAndIsAuction(
-                    VehicleStatus.ACTIVE,
-                    'N',
+            // isAuction이 지정되지 않은 경우 - 모든 ACTIVE 상태 차량 조회 (경매 여부 무관)
+            vehiclesPage = vehicleRepository.findByVehicleStatusIn(
+                    List.of(VehicleStatus.ACTIVE, VehicleStatus.AUCTIONS),
                     pageable
             );
         }
@@ -256,7 +266,7 @@ public class VehicleService {
 
         List<VehicleListResponse.VehicleSummary> summaries = vehiclesPage.getContent().stream()
                 .map(vehicle -> {
-                    // 기존 방식대로 VehicleSummary 생성
+                    //VehicleSummary 생성
                     VehicleListResponse.VehicleSummary summary = buildVehicleSummary(vehicle);
 
                     // 찜 여부 설정
