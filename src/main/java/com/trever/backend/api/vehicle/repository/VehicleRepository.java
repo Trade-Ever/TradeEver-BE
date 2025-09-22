@@ -1,5 +1,6 @@
 package com.trever.backend.api.vehicle.repository;
 
+import com.trever.backend.api.user.entity.User;
 import com.trever.backend.api.vehicle.dto.CarModelCountResponse;
 import com.trever.backend.api.vehicle.dto.CarNameCountResponse;
 import com.trever.backend.api.vehicle.dto.ManufacturerCountResponse;
@@ -64,4 +65,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long>,VehicleR
     // VehicleRepository 인터페이스에 추가
     Page<Vehicle> findByVehicleStatusInAndIsAuction(List<VehicleStatus> statuses, char isAuction, Pageable pageable);
     Page<Vehicle> findByVehicleStatusIn(List<VehicleStatus> statuses, Pageable pageable);
+
+    // 사용자가 등록한 차량 조회 메서드 추가
+    Page<Vehicle> findBySeller(User seller, Pageable pageable);
 }

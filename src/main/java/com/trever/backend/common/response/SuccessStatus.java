@@ -50,6 +50,7 @@ public enum SuccessStatus {
     RECENT_SEARCH_ADD_SUCCESS(HttpStatus.OK, "최근 검색어 추가 성공"),
     RECENT_SEARCH_LIST_SUCCESS(HttpStatus.OK, "최근 검색어 조회 성공"),
     RECENT_SEARCH_DELETE_SUCCESS(HttpStatus.OK, "최근 검색어 삭제 성공"),
+    READ_MY_VEHICLE_SUCCESS(HttpStatus.OK, "내가 등록한 차량 조회 성공"),
 
 
 
