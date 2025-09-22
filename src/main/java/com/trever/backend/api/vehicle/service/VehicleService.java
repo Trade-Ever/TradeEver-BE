@@ -192,6 +192,7 @@ public class VehicleService {
         // VehicleResponse에 대표 사진 URL 포함
         return VehicleResponse.builder()
                 .id(vehicle.getId())
+                .auctionId(vehicle.getAuctionId())
                 .manufacturer(vehicle.getManufacturer())
                 .carName(vehicle.getCarName())
                 .model(vehicle.getModel())
@@ -347,7 +348,6 @@ public class VehicleService {
 
         return VehicleListResponse.VehicleSummary.builder()
                 .id(vehicle.getId())
-                .auctionId(vehicle.getAuctionId())
                 .vehicleTypeName(vehicleTypeName)
                 .mainOptions(mainOptions)
                 .carNumber(vehicle.getCarNumber())

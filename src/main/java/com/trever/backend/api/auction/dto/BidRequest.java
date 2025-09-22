@@ -19,7 +19,4 @@ public class BidRequest {
     @NotNull(message = "입찰 가격은 필수입니다")
     @Positive(message = "입찰 가격은 양수여야 합니다")
     private Long bidPrice;
-    
-    @NotNull(message = "입찰자 ID는 필수입니다")
-    private Long bidderId;
 }
