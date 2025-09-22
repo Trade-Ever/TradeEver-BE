@@ -68,10 +68,11 @@
 <h1>자동차 매매 계약서</h1>
 <div class="contract-meta">
     계약번호: <span th:text="${contract.id}"></span><br/>
-    작성 장소: 서울특별시
+    작성일자: <span th:text="${#temporals.format(transaction.createdAt, 'yyyy년 MM월 dd일')}"></span><br/>
+    작성 장소: 서울 금천구 가산디지털1로 189 (주)LG 가산 디지털센터
 </div>
 
-<p>본 계약은 아래와 같이 차량 매매에 관한 사항을 합의하여 체결한다.</p>
+<p>매도인과 매수인은 아래 명시된 차량 매매에 관하여 합의하여 본 계약을 체결한다.</p>
 
 <h3>1. 차량 정보</h3>
 <table>
@@ -110,7 +111,7 @@
             (<span th:text="${T(com.trever.backend.common.util.MoneyUtil).toKorean(transaction.finalPrice)}"></span>)
         </td>
 
-        <th>계약일자</th>
+        <th>계약 체결일</th>
         <td th:text="${#temporals.format(transaction.createdAt, 'yyyy년 MM월 dd일')}"></td>
     </tr>
 </table>
@@ -123,7 +124,7 @@
         <th>생년월일</th>
         <th>전화번호</th>
         <th>이메일</th>
-        <th>거주지</th>
+        <th>주소</th>
     </tr>
     <tr>
         <th>구매자</th>
@@ -150,12 +151,16 @@
 
 <div class="article">
     <h4>제2조 (소유권 이전)</h4>
-    <p>매도인은 계약 체결 후 정해진 기한 내에 차량 소유권 이전 등록에 필요한 모든 절차를 이행하여야 한다.</p>
+    <p>
+        매도인은 계약 체결일로부터 7일 이내(
+        <span th:text="${#temporals.format(transaction.createdAt.plusDays(7), 'yyyy년 MM월 dd일')}"></span>
+        )까지 차량 소유권 이전등록에 필요한 모든 서류를 교부하고 절차를 완료하여야 한다.
+    </p>
 </div>
 
 <div class="article">
-    <h4>제3조 (계약 해제 및 해지)</h4>
-    <p>계약 당사자 중 일방이 본 계약을 위반하거나 계약 조건을 불이행할 경우, 상대방은 계약을 해제 또는 해지할 수 있다.</p>
+    <h4>제3조 (계약 해제)</h4>
+    <p>계약 당사자 일방이 본 계약의 내용을 위반할 경우 상대방은 계약을 해제할 수 있으며, 이로 인한 손해가 발생할 경우 위반 당사자가 배상한다.</p>
 </div>
 
 <div class="article">
@@ -165,26 +170,24 @@
 
 <div class="article">
     <h4>제5조 (분쟁 해결)</h4>
-    <p>본 계약과 관련하여 분쟁이 발생할 경우, 당사자는 상호 협의하여 해결하며, 협의가 이루어지지 않을 경우 관할 법원은 매도인의 주소지를 관할하는 법원으로 한다.</p>
+    <p>본 계약과 관련하여 분쟁이 발생할 경우, 당사자는 상호 협의하여 해결하며, 협의가 이루어지지 아니하는 경우 매도인의 주소지를 관할하는 법원을 제1심 법원으로 한다.</p>
 </div>
 
 <div class="signature">
     <table class="signature-table">
         <tr>
-            <td>
-                <strong>구매자</strong><br/>
-                성명: <span th:text="${transaction.buyer.name}"></span><br/>
+            <td style="border:1px solid #000; height:80px; width:50%; text-align:left; padding:10px;">
+                <strong>매수인</strong><br/><br/>
+                성명: <span th:text="${transaction.buyer.name}"></span> <br/><br/>
+                (서명/날인)
             </td>
-            <td>
-                <strong>판매자</strong><br/>
-                성명: <span th:text="${transaction.seller.name}"></span><br/>
+            <td style="border:1px solid #000; height:80px; width:50%; text-align:left; padding:10px;">
+                <strong>매도인</strong><br/><br/>
+                성명: <span th:text="${transaction.seller.name}"></span> <br/><br/>
+                (서명/날인)
             </td>
         </tr>
     </table>
 </div>
-
-<p style="text-align: right; margin-top: 50px;">
-    작성일: <span th:text="${#temporals.format(transaction.createdAt, 'yyyy년 MM월 dd일')}"></span>
-</p>
 </body>
 </html>

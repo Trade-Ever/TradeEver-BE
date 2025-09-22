@@ -57,35 +57,35 @@ public class ContractController {
         return ApiResponse.success(SuccessStatus.SEND_CONTRACT_SUCCESS, contractResponseDTO);
     }
 
-    // 구매자 서명
-    @Operation(summary = "구매자 서명 API", description = "계약에 구매자가 서명합니다.")
-    @PostMapping("/{contractId}/sign/buyer")
-    public ResponseEntity<ApiResponse<ContractResponseDTO>> signAsBuyer(
-            @PathVariable Long contractId,
-            @AuthenticationPrincipal UserDetails userDetails) {
-
-        String email = userDetails.getUsername();
-        User buyer = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
-
-        ContractResponseDTO contractResponseDTO = contractService.signAsBuyer(contractId, buyer.getId());
-        return ApiResponse.success(SuccessStatus.SIGN_CONTRACT_SUCCESS, contractResponseDTO);
-    }
-
-    // 판매자 서명
-    @Operation(summary = "판매자 서명 API", description = "계약에 판매자가 서명합니다.")
-    @PostMapping("/{contractId}/sign/seller")
-    public ResponseEntity<ApiResponse<ContractResponseDTO>> signAsSeller(
-            @PathVariable Long contractId,
-            @AuthenticationPrincipal UserDetails userDetails) {
-
-        String email = userDetails.getUsername();
-        User seller = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
-
-        ContractResponseDTO contractResponseDTO = contractService.signAsSeller(contractId, seller.getId());
-        return ApiResponse.success(SuccessStatus.SIGN_CONTRACT_SUCCESS, contractResponseDTO);
-    }
+//    // 구매자 서명
+//    @Operation(summary = "구매자 서명 API", description = "계약에 구매자가 서명합니다.")
+//    @PostMapping("/{contractId}/sign/buyer")
+//    public ResponseEntity<ApiResponse<ContractResponseDTO>> signAsBuyer(
+//            @PathVariable Long contractId,
+//            @AuthenticationPrincipal UserDetails userDetails) {
+//
+//        String email = userDetails.getUsername();
+//        User buyer = userRepository.findByEmail(email)
+//                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+//
+//        ContractResponseDTO contractResponseDTO = contractService.signAsBuyer(contractId, buyer.getId());
+//        return ApiResponse.success(SuccessStatus.SIGN_CONTRACT_SUCCESS, contractResponseDTO);
+//    }
+//
+//    // 판매자 서명
+//    @Operation(summary = "판매자 서명 API", description = "계약에 판매자가 서명합니다.")
+//    @PostMapping("/{contractId}/sign/seller")
+//    public ResponseEntity<ApiResponse<ContractResponseDTO>> signAsSeller(
+//            @PathVariable Long contractId,
+//            @AuthenticationPrincipal UserDetails userDetails) {
+//
+//        String email = userDetails.getUsername();
+//        User seller = userRepository.findByEmail(email)
+//                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+//
+//        ContractResponseDTO contractResponseDTO = contractService.signAsSeller(contractId, seller.getId());
+//        return ApiResponse.success(SuccessStatus.SIGN_CONTRACT_SUCCESS, contractResponseDTO);
+//    }
 
     // 계약서 pdf 조희
     @Operation(summary = "계약서 PDF 조회 API", description = "구매자 또는 판매자가 계약 체결 후 생성된 계약서 PDF를 조회합니다")
