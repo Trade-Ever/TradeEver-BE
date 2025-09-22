@@ -17,12 +17,6 @@ import java.util.List;
 
 @Repository
 public interface VehicleRepository extends JpaRepository<Vehicle, Long>,VehicleRepositoryCustom {
-    
-    Page<Vehicle> findByIsAuction(Character isAuction, Pageable pageable);
-    
-    Page<Vehicle> findBySellerId(Long sellerId, Pageable pageable);
-
-    Page<Vehicle> findByVehicleStatusAndIsAuction(VehicleStatus status, char isAuction, Pageable pageable);
 
     @Modifying
     @Query("UPDATE Vehicle v SET v.vehicleStatus = :status WHERE v.id = :vehicleId")
@@ -66,4 +60,8 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long>,VehicleR
     List<CarModelCountResponse> countByCarModel(@Param("manufacturer") String manufacturer,
                                                 @Param("carName") String carName,
                                                 @Param("status") VehicleStatus status);
+
+    // VehicleRepository 인터페이스에 추가
+    Page<Vehicle> findByVehicleStatusInAndIsAuction(List<VehicleStatus> statuses, char isAuction, Pageable pageable);
+    Page<Vehicle> findByVehicleStatusIn(List<VehicleStatus> statuses, Pageable pageable);
 }

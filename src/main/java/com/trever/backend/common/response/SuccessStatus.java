@@ -19,7 +19,7 @@ public enum SuccessStatus {
     SEND_HEALTH_SUCCESS(HttpStatus.OK,"서버 상태 OK"),
     AUCTION_CREATED(HttpStatus.OK,"경매 생성"),
     AUCTION_READ(HttpStatus.OK,"경매 조회"),
-    BID_SUCESS(HttpStatus.OK,"입찰 성공"),
+    CREATE_BID_SUCCESS(HttpStatus.OK,"입찰 성공"),
     AUCTION_CANCEL(HttpStatus.OK,"경매 취소"),
     CAR_INFO_SUCCESS(HttpStatus.OK, "차량 정보 조회 성공"),
     CAR_HIERARCHY_SUCCESS(HttpStatus.OK, "차량 계층 구조 조회 성공"),

@@ -149,15 +149,18 @@ public class VehicleService {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new NotFoundException("차량을 찾을 수 없습니다."));
 
-        if (userId != null) {
+        User seller = userRepository.findById(vehicle.getSeller().getId())
+                .orElseThrow(() -> new NotFoundException("판매자를 찾을 수 없습니다."));
+
+        User loginUser = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("로그인한 사용자를 찾을 수 없습니다."));
+
+        if (loginUser != null) {
             recentViewService.addRecentView(userId, vehicleId);
         }
 
-        User user = userRepository.findById(vehicle.getSeller().getId())
-                .orElseThrow(() -> new NotFoundException("판매자를 찾을 수 없습니다."));
-
-        UserProfile userProfile = userProfileRepository.findByUser(user)
-                .orElseThrow(()-> new NotFoundException("유저 프로필을 찾을 수 없습니다."));
+        UserProfile userProfile = userProfileRepository.findByUser(seller)
+                .orElseThrow(()-> new NotFoundException("판매자 프로필을 찾을 수 없습니다."));
 
         List<VehiclePhotoDto> photos = vehiclePhotoService.getVehiclePhotos(vehicle.getId()).stream()
                 .map(photo -> VehiclePhotoDto.builder()
@@ -177,15 +180,15 @@ public class VehicleService {
         String vehicleTypeName = (vehicle.getVehicleType() != null) ? vehicle.getVehicleType().getDisplayName() : "미정";
 
         boolean isSeller = false;
-        if (user != null) {
+        if (loginUser != null) {
             // 현재 사용자가 판매자인지 확인
-            if(vehicle.getSeller().getId().equals(user.getId())){
+            if(seller.getId().equals(loginUser.getId())) {
                isSeller = true;
             }
         }
 
         boolean isFavorite = false;
-        if (userId != null) {
+        if (loginUser != null) {
             isFavorite = favoriteRepository.existsByUserIdAndVehicleId(userId, vehicle.getId());
         }
       
@@ -215,9 +218,9 @@ public class VehicleService {
                 .options(options) // 옵션 목록 추가
                 .photos(photos)
                 .isSeller(isSeller)
-                .sellerId(user.getId())
-                .sellerPhone(user.getPhone())
-                .sellerName(user.getName())
+                .sellerId(seller.getId())
+                .sellerPhone(seller.getPhone())
+                .sellerName(seller.getName())
                 .sellerLocationCity(userProfile.getLocationCity())
                 .sellerProfileImageUrl(userProfile.getProfileImageUrl())
                 .updatedAt(vehicle.getUpdatedAt())
@@ -234,15 +237,25 @@ public class VehicleService {
 
         Page<Vehicle> vehiclesPage;
         if (isAuction != null) {
-            vehiclesPage = vehicleRepository.findByVehicleStatusAndIsAuction(
-                    VehicleStatus.ACTIVE,
-                    isAuction ? 'Y' : 'N',
-                    pageable
-            );
+            if (isAuction) {
+                // 경매 차량 조회 - AUCTIONS 상태와 isAuction='Y'인 차량 모두 포함
+                vehiclesPage = vehicleRepository.findByVehicleStatusInAndIsAuction(
+                        List.of(VehicleStatus.ACTIVE, VehicleStatus.AUCTIONS),
+                        'Y',
+                        pageable
+                );
+            } else {
+                // 일반 판매 차량 조회 - ACTIVE 상태의 isAuction='N' 차량만
+                vehiclesPage = vehicleRepository.findByVehicleStatusInAndIsAuction(
+                        List.of(VehicleStatus.ACTIVE, VehicleStatus.AUCTIONS),
+                        'N',
+                        pageable
+                );
+            }
         } else {
-            vehiclesPage = vehicleRepository.findByVehicleStatusAndIsAuction(
-                    VehicleStatus.ACTIVE,
-                    'N',
+            // isAuction이 지정되지 않은 경우 - 모든 ACTIVE 상태 차량 조회 (경매 여부 무관)
+            vehiclesPage = vehicleRepository.findByVehicleStatusIn(
+                    List.of(VehicleStatus.ACTIVE, VehicleStatus.AUCTIONS),
                     pageable
             );
         }
@@ -256,7 +269,7 @@ public class VehicleService {
 
         List<VehicleListResponse.VehicleSummary> summaries = vehiclesPage.getContent().stream()
                 .map(vehicle -> {
-                    // 기존 방식대로 VehicleSummary 생성
+                    //VehicleSummary 생성
                     VehicleListResponse.VehicleSummary summary = buildVehicleSummary(vehicle);
 
                     // 찜 여부 설정
