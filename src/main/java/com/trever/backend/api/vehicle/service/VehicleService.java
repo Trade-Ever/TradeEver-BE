@@ -3,15 +3,13 @@ package com.trever.backend.api.vehicle.service;
 import com.trever.backend.api.auction.dto.AuctionCreateRequest;
 import com.trever.backend.api.auction.service.AuctionService;
 import com.trever.backend.api.recent.service.RecentViewService;
+import com.trever.backend.api.vehicle.dto.*;
 import com.trever.backend.api.vehicle.entity.VehicleStatus;
+import com.trever.backend.basiccar.service.CarModelService;
 import com.trever.backend.common.exception.BadRequestException;
 import com.trever.backend.common.exception.NotFoundException;
 import com.trever.backend.api.user.entity.User;
 import com.trever.backend.api.user.repository.UserRepository;
-import com.trever.backend.api.vehicle.dto.VehicleCreateRequest;
-import com.trever.backend.api.vehicle.dto.VehicleListResponse;
-import com.trever.backend.api.vehicle.dto.VehiclePhotoDto;
-import com.trever.backend.api.vehicle.dto.VehicleResponse;
 import com.trever.backend.api.vehicle.entity.Vehicle;
 import com.trever.backend.api.vehicle.repository.VehicleRepository;
 import jakarta.transaction.Transactional;
@@ -28,7 +26,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -41,9 +41,10 @@ public class VehicleService {
     private final VehicleRepository vehicleRepository;
     private final UserRepository userRepository;
     private final AuctionService auctionService;
-    private final VehiclePhotoService vehiclePhotoService; // 추가: VehiclePhotoService 의존성 주입
+    private final VehiclePhotoService vehiclePhotoService;
     private final RecentViewService recentViewService;
     private final VehicleOptionService vehicleOptionService;
+    private final CarModelService carModelService;
     
     /**
      * 새 차량 등록
@@ -321,30 +322,121 @@ public class VehicleService {
                 .build();
     }
 
-    // 차량 검색
-    @Transactional
-    public VehicleListResponse searchVehicles(String keyword, int page, int size, String sortBy, Boolean isAuction) {
-        Pageable pageable = (sortBy != null)
-                ? PageRequest.of(page, size, Sort.by(sortBy).descending())
-                : PageRequest.of(page, size);
 
-        Page<Vehicle> vehiclePage;
+    /**
+     * 필터링 조건으로 차량 검색
+     */
+    public VehicleListResponse searchByFilter(VehicleSearchRequest request) {
+        Pageable pageable = PageRequest.of(
+                request.getPage(),
+                request.getSize(),
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
 
-        if (isAuction != null) {
-            vehiclePage = vehicleRepository.searchByKeywordAndAuction(keyword, isAuction ? 'Y' : 'N', pageable);
-        } else {
-            vehiclePage = vehicleRepository.searchByKeyword(keyword, pageable);
-        }
+        Page<Vehicle> vehiclesPage = vehicleRepository.searchByFilter(request, pageable);
 
-        List<VehicleListResponse.VehicleSummary> summaries = vehiclePage.getContent().stream()
+        // 페이지 객체에서 차량 목록 추출 및 변환
+        List<VehicleListResponse.VehicleSummary> summaries = vehiclesPage.getContent().stream()
                 .map(this::buildVehicleSummary)
-                .toList();
+                .collect(Collectors.toList());
 
+        // 차량 목록 API와 동일한 형식으로 응답 생성
         return VehicleListResponse.builder()
                 .vehicles(summaries)
-                .totalCount((int) vehiclePage.getTotalElements())
-                .pageNumber(vehiclePage.getNumber())
-                .pageSize(vehiclePage.getSize())
+                .totalCount((int) vehiclesPage.getTotalElements())
+                .pageNumber(request.getPage())
+                .pageSize(request.getSize())
                 .build();
+    }
+
+    /**
+     * 카테고리별(국산/수입) 제조사 및 차량 수 조회
+     */
+    public List<ManufacturerCategoryResponse> getCategorizedManufacturerCounts() {
+        // 1. 국산 제조사 목록 조회
+        List<String> domesticManufacturers = carModelService.getDomesticManufacturers();
+
+        // 2. 수입 제조사 목록 조회
+        List<String> importedManufacturers = carModelService.getImportedManufacturers();
+
+        // 3. 모든 제조사의 차량 수 조회
+        List<ManufacturerCountResponse> allManufacturerCounts =
+                vehicleRepository.countByManufacturer(VehicleStatus.ACTIVE);
+
+        // 4. 제조사별 차량 수를 Map으로 변환하여 조회 효율 높이기
+        Map<String, Long> manufacturerCountMap = allManufacturerCounts.stream()
+                .collect(Collectors.toMap(
+                        ManufacturerCountResponse::getManufacturer,
+                        ManufacturerCountResponse::getCount
+                ));
+
+        // 5. 국산 제조사 차량 수 목록 생성
+        List<ManufacturerCountResponse> domesticCounts = domesticManufacturers.stream()
+                .map(manufacturer -> new ManufacturerCountResponse(
+                        manufacturer,
+                        manufacturerCountMap.getOrDefault(manufacturer, 0L)
+                ))
+                .collect(Collectors.toList());
+
+        // 6. 수입 제조사 차량 수 목록 생성
+        List<ManufacturerCountResponse> importedCounts = importedManufacturers.stream()
+                .map(manufacturer -> new ManufacturerCountResponse(
+                        manufacturer,
+                        manufacturerCountMap.getOrDefault(manufacturer, 0L)
+                ))
+                .collect(Collectors.toList());
+
+        // 7. 카테고리별 응답 생성
+        List<ManufacturerCategoryResponse> result = new ArrayList<>();
+        result.add(new ManufacturerCategoryResponse("국산", domesticCounts));
+        result.add(new ManufacturerCategoryResponse("수입", importedCounts));
+
+        return result;
+    }
+
+    /**
+     * 특정 제조사의 모든 차명과 그에 해당하는 차량 수 조회
+     */
+    public List<CarNameCountResponse> getAllCarNameCounts(String manufacturer) {
+        // basiccar에서 해당 제조사의 모든 차명 목록 조회
+        List<String> allCarNames = carModelService.getCarNamesByManufacturer(manufacturer);
+
+        // vehicle에서 해당 제조사의 차명별 차량 수 조회
+        List<CarNameCountResponse> vehicleCounts = vehicleRepository.countByCarName(manufacturer, VehicleStatus.ACTIVE);
+
+        // vehicleCounts를 Map으로 변환
+        Map<String, Long> countsMap = vehicleCounts.stream()
+                .collect(Collectors.toMap(CarNameCountResponse::getCarName, CarNameCountResponse::getCount));
+
+        // 모든 차명에 대해 응답 생성
+        return allCarNames.stream()
+                .map(carName -> {
+                    Long count = countsMap.getOrDefault(carName, 0L);
+                    return new CarNameCountResponse(carName, count);
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 특정 제조사와 차명의 모든 차모델과 그에 해당하는 차량 수 조회
+     */
+    public List<CarModelCountResponse> getAllCarModelCounts(String manufacturer, String carName) {
+        // basiccar에서 해당 제조사와 차명의 모든 차모델 목록 조회
+        List<String> allCarModels = carModelService.getCarModelsByManufacturerAndCarName(manufacturer, carName);
+
+        // vehicle에서 해당 제조사와 차명의 차모델별 차량 수 조회
+        List<CarModelCountResponse> vehicleCounts = vehicleRepository.countByCarModel(manufacturer, carName, VehicleStatus.ACTIVE);
+
+        // vehicleCounts를 Map으로 변환
+        Map<String, Long> countsMap = vehicleCounts.stream()
+                .collect(Collectors.toMap(CarModelCountResponse::getCarModel, CarModelCountResponse::getCount));
+
+        // 모든 차모델에 대해 응답 생성
+        return allCarModels.stream()
+                .map(carModel -> {
+                    Long count = countsMap.getOrDefault(carModel, 0L);
+                    return new CarModelCountResponse(carModel, count);
+                })
+                .collect(Collectors.toList());
     }
 }

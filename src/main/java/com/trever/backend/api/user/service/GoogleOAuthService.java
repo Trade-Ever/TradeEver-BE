@@ -21,7 +21,6 @@ public class GoogleOAuthService {
         this.verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance())
                 .setAudience(Arrays.asList(webClientId, iosClientId))
                 .build();
-
     }
 
     public GoogleIdToken.Payload verifyIdToken(String idTokenString) {
