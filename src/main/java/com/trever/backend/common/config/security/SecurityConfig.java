@@ -1,7 +1,9 @@
 package com.trever.backend.common.config.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.trever.backend.api.jwt.JwtFilter;
 import com.trever.backend.api.jwt.JwtProvider;
+import com.trever.backend.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,7 +17,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -29,13 +30,13 @@ import java.util.Collections;
 public class SecurityConfig {
 
     private final JwtProvider jwtProvider;
+    private final ObjectMapper objectMapper; // 추가
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // AuthenticationManager (로그인 시 필요)
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
@@ -44,25 +45,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // 기본 보안 기능 비활성화
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable)
-
-                // CORS configuration
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                // H2 console 허용
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
-
-                // Stateless session (JWT)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
-                // URL
                 .authorizeHttpRequests(auth -> auth
-                        // Public: H2 console, Swagger
                         .requestMatchers(
                                 "/h2-console/**",
                                 "/swagger-ui/**",
@@ -72,37 +63,66 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/api-doc"
                         ).permitAll()
-
-                        // Public: member endpoints
                         .requestMatchers(
                                 "/api/v1/users/signup",
                                 "/api/v1/users/reissue",
                                 "/api/v1/users/login",
                                 "/api/v1/users/auth/google/login"
-
                         ).permitAll()
-
-                        // Public: 차량 관련
                         .requestMatchers(
                                 "/api/cars/**",
                                 "/api/vehicles/**",
                                 "/api/vehicle-options/**"
                         ).permitAll()
-
-
-                        // 나머지 요청은 인증 필요
                         .anyRequest().authenticated()
                 )
-
-                // JWT filter
                 .addFilterBefore(new JwtFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class)
-
-                // Spring Security 로그아웃 기능 비활성화
                 .logout(AbstractHttpConfigurer::disable)
+                .exceptionHandling(handler -> handler
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setContentType("application/json;charset=UTF-8");
+                            if (request.getRequestURI().contains("/api/auctions/bids")) {
+                                response.setStatus(HttpStatus.BAD_REQUEST.value());
 
-                // Return 401 on unauthorized
-                .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                                ApiResponse<?> errorResponse = ApiResponse.builder()
+                                        .status(400)
+                                        .message("입찰을 위한 인증이 필요합니다: " + authException.getMessage())
+                                        .build();
+
+                                response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+                            } else {
+                                response.setStatus(HttpStatus.UNAUTHORIZED.value());
+
+                                ApiResponse<?> errorResponse = ApiResponse.builder()
+                                        .status(401)
+                                        .message("인증이 필요합니다")
+                                        .build();
+
+                                response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+                            }
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setContentType("application/json;charset=UTF-8");
+                            if (request.getRequestURI().contains("/api/auctions/bids")) {
+                                response.setStatus(HttpStatus.BAD_REQUEST.value());
+
+                                ApiResponse<?> errorResponse = ApiResponse.builder()
+                                        .status(400)
+                                        .message("접근 권한이 없습니다")
+                                        .build();
+
+                                response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+                            } else {
+                                response.setStatus(HttpStatus.FORBIDDEN.value());
+
+                                ApiResponse<?> errorResponse = ApiResponse.builder()
+                                        .status(403)
+                                        .message("접근 권한이 없습니다")
+                                        .build();
+
+                                response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+                            }
+                        })
                 );
 
         return http.build();
@@ -112,17 +132,16 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Arrays.asList(
-                "http://localhost:8080",       // 로컬에서 Swagger 띄운 경우
-                "https://trever.store",        // 배포 API 1
-                "https://www.trever.store"   // 배포 API 2
-        )); // 허용할 Origin
-        config.setAllowedMethods(Collections.singletonList("*")); // 모든 HTTP 메서드 허용
-        config.setAllowedHeaders(Collections.singletonList("*")); // 모든 헤더 허용
-        config.setAllowCredentials(true); // 인증 정보 포함 허용
+                "http://localhost:8080",
+                "https://trever.store",
+                "https://www.trever.store"
+        ));
+        config.setAllowedMethods(Collections.singletonList("*"));
+        config.setAllowedHeaders(Collections.singletonList("*"));
+        config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
     }
-
 }

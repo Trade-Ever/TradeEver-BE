@@ -149,15 +149,18 @@ public class VehicleService {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new NotFoundException("차량을 찾을 수 없습니다."));
 
-        if (userId != null) {
+        User seller = userRepository.findById(vehicle.getSeller().getId())
+                .orElseThrow(() -> new NotFoundException("판매자를 찾을 수 없습니다."));
+
+        User loginUser = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("로그인한 사용자를 찾을 수 없습니다."));
+
+        if (loginUser != null) {
             recentViewService.addRecentView(userId, vehicleId);
         }
 
-        User user = userRepository.findById(vehicle.getSeller().getId())
-                .orElseThrow(() -> new NotFoundException("판매자를 찾을 수 없습니다."));
-
-        UserProfile userProfile = userProfileRepository.findByUser(user)
-                .orElseThrow(()-> new NotFoundException("유저 프로필을 찾을 수 없습니다."));
+        UserProfile userProfile = userProfileRepository.findByUser(seller)
+                .orElseThrow(()-> new NotFoundException("판매자 프로필을 찾을 수 없습니다."));
 
         List<VehiclePhotoDto> photos = vehiclePhotoService.getVehiclePhotos(vehicle.getId()).stream()
                 .map(photo -> VehiclePhotoDto.builder()
@@ -177,15 +180,15 @@ public class VehicleService {
         String vehicleTypeName = (vehicle.getVehicleType() != null) ? vehicle.getVehicleType().getDisplayName() : "미정";
 
         boolean isSeller = false;
-        if (user != null) {
+        if (loginUser != null) {
             // 현재 사용자가 판매자인지 확인
-            if(vehicle.getSeller().getId().equals(user.getId())){
+            if(seller.getId().equals(loginUser.getId())) {
                isSeller = true;
             }
         }
 
         boolean isFavorite = false;
-        if (userId != null) {
+        if (loginUser != null) {
             isFavorite = favoriteRepository.existsByUserIdAndVehicleId(userId, vehicle.getId());
         }
       
@@ -215,9 +218,9 @@ public class VehicleService {
                 .options(options) // 옵션 목록 추가
                 .photos(photos)
                 .isSeller(isSeller)
-                .sellerId(user.getId())
-                .sellerPhone(user.getPhone())
-                .sellerName(user.getName())
+                .sellerId(seller.getId())
+                .sellerPhone(seller.getPhone())
+                .sellerName(seller.getName())
                 .sellerLocationCity(userProfile.getLocationCity())
                 .sellerProfileImageUrl(userProfile.getProfileImageUrl())
                 .updatedAt(vehicle.getUpdatedAt())

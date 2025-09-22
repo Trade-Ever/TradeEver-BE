@@ -26,6 +26,7 @@ import org.springframework.web.context.request.async.DeferredResult;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 @Tag(name = "Auction", description = "경매 API")
 @Slf4j
@@ -83,56 +84,53 @@ public class AuctionController {
      * 입찰하기 - 비동기 처리 후 결과 반환
      */
     @PostMapping("/bids")
-    public DeferredResult<ResponseEntity<?>> placeBid(
+    public ResponseEntity<ApiResponse<?>> placeBid(
             @Valid @RequestBody BidRequest bidRequest,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-
-        Long auctionId = bidRequest.getAuctionId();
-
-        String email = userDetails.getUsername();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
-
-        // 최대 10초까지 결과를 기다리는 DeferredResult 생성
-        DeferredResult<ResponseEntity<?>> deferredResult = new DeferredResult<>(10000L);
-
-        // 타임아웃 설정
-        deferredResult.onTimeout(() -> {
-            deferredResult.setResult(ResponseEntity.status(HttpStatus.ACCEPTED)
-                    .body("입찰 처리 중입니다. 상태를 확인해주세요."));
-        });
-
-        bidRequest.setAuctionId(auctionId);
-
         try {
-            // 비동기 입찰 큐에 요청 등록
-            CompletableFuture<BidResponse> responseFuture =
-                    auctionService.placeBid(bidRequest, user);
+            Long auctionId = bidRequest.getAuctionId();
+            String email = userDetails.getUsername();
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
-            // 결과가 완료되면 DeferredResult에 설정
-            responseFuture.whenComplete((result, ex) -> {
-                if (ex != null) {
-                    // 예외 발생 시
-                    log.error("입찰 처리 중 오류 발생: {}", ex.getMessage(), ex);
-                    deferredResult.setResult(ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                            .body(ex.getMessage()));
-                } else {
-                    // 정상 처리 시
-                    log.debug("입찰 처리 완료: 경매 ID={}, 입찰자={}, 입찰가={}",
-                            auctionId, user.getName(), result.getBidPrice());
-                    deferredResult.setResult(ResponseEntity.ok(result));
-                }
-            });
-
+            bidRequest.setAuctionId(auctionId);
+            
+            // CompletableFuture 결과를 동기적으로 대기하여 예외를 즉시 포착
+            BidResponse response = auctionService.placeBid(bidRequest, user).join();
+            
+            return ResponseEntity.ok(ApiResponse.<BidResponse>builder()
+                    .status(SuccessStatus.CREATE_BID_SUCCESS.getStatusCode())
+                    .message(SuccessStatus.CREATE_BID_SUCCESS.getMessage())
+                    .data(response)
+                    .build());
+                    
+        } catch (CompletionException ex) {
+            // CompletableFuture에서 발생한 예외 처리
+            Throwable cause = ex.getCause();
+            while (cause.getCause() != null) {
+                cause = cause.getCause();
+            }
+            
+            log.error("입찰 처리 중 오류 발생: {}", cause.getMessage());
+            
+            // 모든 예외를 400 Bad Request로 응답
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.builder()
+                            .status(400)
+                            .message(cause.getMessage())
+                            .build());
+                            
         } catch (Exception e) {
-            // 입찰 요청 등록 자체에 실패한 경우
-            log.error("입찰 요청 처리 중 오류 발생: {}", e.getMessage(), e);
-            deferredResult.setResult(ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage()));
+            // 기타 예외 처리
+            log.error("입찰 요청 처리 중 오류 발생: {}", e.getMessage());
+            
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.builder()
+                            .status(400)
+                            .message(e.getMessage())
+                            .build());
         }
-
-        return deferredResult;
     }
     
     @Operation(summary = "경매 취소", description = "경매를 취소합니다. 관리자 또는 판매자만 가능합니다.")
