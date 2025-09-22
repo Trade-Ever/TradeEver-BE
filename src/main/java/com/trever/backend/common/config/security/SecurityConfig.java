@@ -84,8 +84,6 @@ public class SecurityConfig {
                         // Public: 차량 관련
                         .requestMatchers(
                                 "/api/cars/**",
-                                "/api/vehicles",
-                                "/api/vehicles/search",
                                 "/api/vehicles/**",
                                 "/api/vehicle-options/**"
                         ).permitAll()
