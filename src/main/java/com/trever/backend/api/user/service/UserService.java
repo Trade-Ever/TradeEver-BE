@@ -198,7 +198,7 @@ public class UserService {
     }
 
     @Transactional
-    public void completeUserProfile(String email, UserCompleteRequestDTO req, MultipartFile profileImage) {
+    public void completeUserProfile(String email, UserCompleteRequestDTO req) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
@@ -226,17 +226,6 @@ public class UserService {
                 profile.setBirthDate(parsed);
             } catch (DateTimeParseException e) {
                 throw new BadRequestException("birthDate must be yyyy-MM-dd");
-            }
-        }
-
-        // 프로필 이미지 처리
-        if (profileImage != null && !profileImage.isEmpty()) {
-            try {
-                // 새 이미지 업로드
-                String imageUrl = firebaseStorageService.uploadImage(profileImage, "profiles");
-                profile.setProfileImageUrl(imageUrl);
-            } catch (IOException e) {
-                throw new RuntimeException("프로필 이미지 업로드에 실패했습니다.", e);
             }
         }
 

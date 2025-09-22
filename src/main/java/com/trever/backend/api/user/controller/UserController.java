@@ -43,39 +43,18 @@ public class UserController {
         return ApiResponse.success(SuccessStatus.SEND_LOGIN_SUCCESS, tokens);
     }
 
-    @Operation(
-            summary = "회원 추가 정보 입력(완성) API",
-            description = "로그인한 사용자가 전화번호/주소/생년월일/이름 등 누락된 정보를 채웁니다.\n\n" +
-                    "요청 예시:\n" +
-                    "```\n" +
-                    "Content-Type: multipart/form-data\n\n" +
-                    "{\n" +
-                    "  \"name\": \"홍길동\",\n" +
-                    "  \"phone\": \"010-1234-5678\",\n" +
-                    "  \"locationCity\": \"서울시 강남구\",\n" +
-                    "  \"birthDate\": \"yyyy-MM-dd\"\n" +
-                    "}\n" +
-                    "profileImage: (이미지 파일)\n" +
-                    "```"
-    )
-    @PostMapping(value = "/me/complete", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "회원 추가 정보 입력(완성) API", description = "로그인한 사용자가 전화번호/주소/생년월일/이름 등 누락된 정보를 채웁니다.")
+    @PostMapping("/me/complete")
     public ResponseEntity<ApiResponse<Void>> completeProfile(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestPart("userInfo") String userInfoJson,
-            @RequestPart(value = "profileImage", required = false) MultipartFile profileImage
-    ) {
-        try {
-            // JSON 문자열 → DTO 파싱
-            UserCompleteRequestDTO req = objectMapper.readValue(userInfoJson, UserCompleteRequestDTO.class);
+            @RequestBody UserCompleteRequestDTO req) {
 
-            String email = userDetails.getUsername();
-            userService.completeUserProfile(email, req, profileImage);
 
-            return ApiResponse.success_only(SuccessStatus.UPDATE_PROFILE_SUCCESS);
-        } catch (Exception e) {
-            log.error("프로필 정보 처리 중 오류 발생: {}", e.getMessage(), e);
-            throw new RuntimeException("프로필 정보 처리 중 오류가 발생했습니다: " + e.getMessage());
-        }
+
+        String email = userDetails.getUsername();
+        userService.completeUserProfile(email, req);
+
+        return ApiResponse.success_only(SuccessStatus.UPDATE_PROFILE_SUCCESS);
     }
 
     // 로그인
