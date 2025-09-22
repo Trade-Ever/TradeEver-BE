@@ -9,6 +9,7 @@ import com.trever.backend.api.trade.dto.PurchaseApplicationResponseDTO;
 import com.trever.backend.api.trade.dto.TransactionResponseDTO;
 import com.trever.backend.api.trade.entity.PurchaseApplication;
 import com.trever.backend.api.trade.entity.Transaction;
+import com.trever.backend.api.trade.entity.TransactionStatus;
 import com.trever.backend.api.trade.repository.PurchaseRequestRepository;
 import com.trever.backend.api.trade.repository.TransactionRepository;
 import com.trever.backend.api.user.entity.User;
@@ -27,6 +28,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.trever.backend.api.trade.entity.TransactionStatus.IN_PROGRESS;
 
@@ -205,7 +208,8 @@ public class TransactionService {
     // 구매 내역 조회 (내가 buyer인 경우)
     @Transactional
     public List<TransactionResponseDTO> getMyPurchases(Long userId) {
-        return transactionRepository.findByBuyerId(userId).stream()
+        return transactionRepository.findByBuyerIdAndStatus(userId, TransactionStatus.COMPLETED)
+                .stream()
                 .map(TransactionResponseDTO::from)
                 .toList();
     }
@@ -213,8 +217,29 @@ public class TransactionService {
     // 판매 내역 조회 (내가 seller인 경우)
     @Transactional
     public List<TransactionResponseDTO> getMySales(Long userId) {
-        return transactionRepository.findBySellerId(userId).stream()
+        return transactionRepository.findBySellerIdAndStatus(userId, TransactionStatus.COMPLETED)
+                .stream()
                 .map(TransactionResponseDTO::from)
                 .toList();
+    }
+
+    // 진행 중 거래 (내가 buyer 이거나 seller 인 경우 전부 포함)
+    public List<TransactionResponseDTO> getMyInProgress(Long userId) {
+        List<TransactionResponseDTO> asBuyer = transactionRepository
+                .findByBuyerIdAndStatus(userId, TransactionStatus.IN_PROGRESS)
+                .stream()
+                .map(TransactionResponseDTO::from)
+                .toList();
+
+        List<TransactionResponseDTO> asSeller = transactionRepository
+                .findBySellerIdAndStatus(userId, TransactionStatus.IN_PROGRESS)
+                .stream()
+                .map(TransactionResponseDTO::from)
+                .toList();
+
+        // 두 결과 합치기
+        return Stream.concat(asBuyer.stream(), asSeller.stream())
+                .distinct()
+                .collect(Collectors.toList());
     }
 }

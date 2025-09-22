@@ -2,6 +2,7 @@ package com.trever.backend.api.vehicle.service;
 
 import com.trever.backend.api.auction.dto.AuctionCreateRequest;
 import com.trever.backend.api.auction.service.AuctionService;
+import com.trever.backend.api.favorite.repository.FavoriteRepository;
 import com.trever.backend.api.recent.service.RecentViewService;
 import com.trever.backend.api.vehicle.dto.*;
 import com.trever.backend.api.vehicle.entity.VehicleStatus;
@@ -45,7 +46,8 @@ public class VehicleService {
     private final RecentViewService recentViewService;
     private final VehicleOptionService vehicleOptionService;
     private final CarModelService carModelService;
-    
+    private final FavoriteRepository favoriteRepository;
+
     /**
      * 새 차량 등록
      */
@@ -168,6 +170,11 @@ public class VehicleService {
         // 차량 타입이 null일 경우 처리
         String vehicleTypeName = (vehicle.getVehicleType() != null) ? vehicle.getVehicleType().getDisplayName() : "미정";
 
+        boolean isFavorited = false;
+        if (userId != null) {
+            isFavorited = favoriteRepository.existsByUserIdAndVehicleId(userId, vehicle.getId());
+        }
+
         // VehicleResponse에 대표 사진 URL 포함
         return VehicleResponse.builder()
                 .id(vehicle.getId())
@@ -182,6 +189,7 @@ public class VehicleService {
                 .accidentDescription(vehicle.getAccidentDescription())
                 .description(vehicle.getDescription())
                 .favoriteCount(vehicle.getFavoriteCount())
+                .isFavorited(isFavorited)
                 .vehicleStatus(vehicle.getVehicleStatus().getDisplayName())
                 .engineCc(vehicle.getEngineCc())
                 .horsepower(vehicle.getHorsepower())
@@ -208,12 +216,17 @@ public class VehicleService {
 
         Page<Vehicle> vehiclesPage;
         if (isAuction != null) {
-            vehiclesPage = vehicleRepository.findByIsAuction(
+            vehiclesPage = vehicleRepository.findByVehicleStatusAndIsAuction(
+                    VehicleStatus.ACTIVE,
                     isAuction ? 'Y' : 'N',
                     pageable
             );
         } else {
-            vehiclesPage = vehicleRepository.findAll(pageable);
+            vehiclesPage = vehicleRepository.findByVehicleStatusAndIsAuction(
+                    VehicleStatus.ACTIVE,
+                    'N',
+                    pageable
+            );
         }
 
         List<VehicleListResponse.VehicleSummary> summaries = vehiclesPage.getContent().stream()

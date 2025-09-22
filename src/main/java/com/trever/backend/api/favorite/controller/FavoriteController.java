@@ -43,30 +43,47 @@ public class FavoriteController {
         return ApiResponse.success(SuccessStatus.GET_FAVORITE_SUCCESS, favorites);
     }
 
-    @Operation(summary = "찜 추가 API", description = "차량을 찜합니다.")
-    @PostMapping("/{vehicleId}")
-    public ResponseEntity<ApiResponse<Void>> addFavorite(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @PathVariable Long vehicleId) {
+//    @Operation(summary = "찜 추가 API", description = "차량을 찜합니다.")
+//    @PostMapping("/{vehicleId}")
+//    public ResponseEntity<ApiResponse<Void>> addFavorite(
+//            @AuthenticationPrincipal UserDetails userDetails,
+//            @PathVariable Long vehicleId) {
+//
+//        String email = userDetails.getUsername();
+//        User user = userRepository.findByEmail(email)
+//                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+//
+//        favoriteService.addFavorite(user.getId(), vehicleId);
+//        return ApiResponse.success(SuccessStatus.ADD_FAVORITE_SUCCESS, null);
+//    }
+//
+//    @Operation(summary = "찜 취소 API", description = "찜을 취소합니다.")
+//    @DeleteMapping("/{vehicleId}")
+//    public ResponseEntity<ApiResponse<Void>> removeFavorite(@AuthenticationPrincipal UserDetails userDetails,
+//                                                            @PathVariable Long vehicleId) {
+//
+//        String email = userDetails.getUsername();
+//        User user = userRepository.findByEmail(email)
+//                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+//
+//        favoriteService.removeFavorite(user.getId(), vehicleId);
+//        return ApiResponse.success(SuccessStatus.REMOVE_FAVORITE_SUCCESS, null);
+//    }
 
+    @Operation(summary = "찜 토글", description = "차량 찜을 토글합니다. (찜 → 해제, 해제 → 찜)")
+    @PostMapping("/{vehicleId}/toggle")
+    public ResponseEntity<ApiResponse<Boolean>> toggleFavorite(
+            @PathVariable Long vehicleId,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
         String email = userDetails.getUsername();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
-        favoriteService.addFavorite(user.getId(), vehicleId);
-        return ApiResponse.success(SuccessStatus.ADD_FAVORITE_SUCCESS, null);
+        boolean isFavorited = favoriteService.toggleFavorite(user.getId(), vehicleId);
+
+        // true → 찜 성공, false → 찜 해제
+        return ApiResponse.success(SuccessStatus.FAVORITE_TOGGLE_SUCCESS, isFavorited);
     }
 
-    @Operation(summary = "찜 취소 API", description = "찜을 취소합니다.")
-    @DeleteMapping("/{vehicleId}")
-    public ResponseEntity<ApiResponse<Void>> removeFavorite(@AuthenticationPrincipal UserDetails userDetails,
-                                                            @PathVariable Long vehicleId) {
-
-        String email = userDetails.getUsername();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
-
-        favoriteService.removeFavorite(user.getId(), vehicleId);
-        return ApiResponse.success(SuccessStatus.REMOVE_FAVORITE_SUCCESS, null);
-    }
 }
