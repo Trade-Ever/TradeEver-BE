@@ -8,10 +8,12 @@ import com.trever.backend.api.auction.repository.AuctionRepository;
 import com.trever.backend.api.auction.repository.BidRepository;
 import com.trever.backend.api.trade.service.TransactionService;
 import com.trever.backend.api.user.entity.User;
-import com.trever.backend.api.user.service.UserWalletService;
 import com.trever.backend.api.vehicle.entity.Vehicle;
+import com.trever.backend.api.vehicle.entity.VehicleStatus;
+import com.trever.backend.api.vehicle.repository.VehicleRepository;
 import com.trever.backend.common.exception.BadRequestException;
 import com.trever.backend.common.exception.NotFoundException;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +29,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -38,9 +39,8 @@ public class AuctionService {
     private final AuctionRepository auctionRepository;
     private final BidRepository bidRepository;
     private final TransactionService transactionService;
-    private final UserWalletService userWalletService;
+    private final VehicleRepository vehicleRepository;
     private final FirebaseRealtimeService firebaseRealtimeService;
-    private final AuctionLockService auctionLockService;
     private final AuctionBidQueueService auctionBidQueueService;
 
     
@@ -165,25 +165,44 @@ public class AuctionService {
         return auctionBidQueueService.queueBid(request, bidder);
     }
 
-    
+
     /**
      * 경매 취소
+     * @param auctionId 취소할 경매 ID
+     * @param userId 요청한 사용자 ID
      */
     @Transactional
-    public void cancelAuction(Long auctionId) {
+    public void cancelAuction(Long auctionId, Long userId) {
         Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new NotFoundException("해당 경매를 찾을 수 없습니다: " + auctionId));
-        
-        // 이미 종료된 경매는 취소할 수 없음
-        if (auction.getStatus() == AuctionStatus.ENDED) {
-            throw new BadRequestException("이미 종료된 경매는 취소할 수 없습니다.");
+                .orElseThrow(() -> new EntityNotFoundException("해당 경매를 찾을 수 없습니다. ID: " + auctionId));
+
+        // 경매 등록자 확인
+        if (!auction.getVehicle().getSeller().getId().equals(userId)) {
+            throw new BadRequestException("경매를 취소할 권한이 없습니다. 경매 등록자만 취소할 수 있습니다.");
         }
-        
+
+        // 경매 상태 확인
+        if (auction.getStatus() != AuctionStatus.ACTIVE) {
+            throw new BadRequestException("이미 종료되었거나 취소된 경매입니다.");
+        }
+
+        // 경매에 입찰이 있는 경우 취소 불가능
+        if (bidRepository.countByAuction(auction) > 0) {
+            throw new BadRequestException("입찰이 있는 경매는 취소할 수 없습니다.");
+        }
+
+        // 경매 상태 변경
         auction.setStatus(AuctionStatus.CANCELLED);
+
+        // 차량 상태 업데이트
+        Vehicle vehicle = auction.getVehicle();
+        vehicle.setVehicleStatus(VehicleStatus.ACTIVE);
+        vehicle.setIsAuction('N');
+        vehicle.setAuctionId(null);
+
         auctionRepository.save(auction);
-        
-        // Firebase에서 상태 업데이트 및 입찰 정보 삭제
-        firebaseRealtimeService.updateAuctionStatus(auctionId, AuctionStatus.CANCELLED.name());
+        vehicleRepository.save(vehicle);
+
     }
     
     /**

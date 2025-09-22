@@ -18,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
@@ -36,18 +38,18 @@ public class AuctionController {
     private final UserRepository userRepository;
     private final VehicleRepository vehicleRepository;
     
-    @Operation(summary = "경매 생성", description = "새로운 경매를 생성합니다.")
-    @PostMapping
-    public ResponseEntity<ApiResponse<Long>> createAuction(
-            @Valid @RequestBody AuctionCreateRequest request) {
-        // 실제 구현 시에는 인증된 사용자의 정보와 권한 체크를 해야 함
-        // 그리고 Vehicle 정보도 조회해야 함
-         Vehicle vehicle = vehicleRepository.findById(request.getVehicleId()).orElseThrow(NotFoundException::new);
-
-        // 테스트를 위해 null을 넘기고 있지만, 실제로는 위에서 조회한 vehicle을 넘겨야 함
-        Long auctionId = auctionService.createAuction(request, vehicle);
-        return ApiResponse.success(SuccessStatus.AUCTION_CREATED, auctionId);
-    }
+//    @Operation(summary = "경매 생성", description = "새로운 경매를 생성합니다.")
+//    @PostMapping
+//    public ResponseEntity<ApiResponse<Long>> createAuction(
+//            @Valid @RequestBody AuctionCreateRequest request) {
+//
+//        // 그리고 Vehicle 정보도 조회해야 함
+//         Vehicle vehicle = vehicleRepository.findById(request.getVehicleId()).orElseThrow(NotFoundException::new);
+//
+//        // 테스트를 위해 null을 넘기고 있지만, 실제로는 위에서 조회한 vehicle을 넘겨야 함
+//        Long auctionId = auctionService.createAuction(request, vehicle);
+//        return ApiResponse.success(SuccessStatus.AUCTION_CREATED, auctionId);
+//    }
     
     @Operation(summary = "경매 상세 조회", description = "경매 상세 정보를 조회합니다.")
     @GetMapping("/{auctionId}")
@@ -82,12 +84,15 @@ public class AuctionController {
      */
     @PostMapping("/bids")
     public DeferredResult<ResponseEntity<?>> placeBid(
-            @Valid @RequestBody BidRequest bidRequest
-//            @AuthenticationPrincipal User user
+            @Valid @RequestBody BidRequest bidRequest,
+            @AuthenticationPrincipal UserDetails userDetails
     ) {
 
         Long auctionId = bidRequest.getAuctionId();
-        User user =  userRepository.findById(1L).orElseThrow(NotFoundException::new);
+
+        String email = userDetails.getUsername();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
         // 최대 10초까지 결과를 기다리는 DeferredResult 생성
         DeferredResult<ResponseEntity<?>> deferredResult = new DeferredResult<>(10000L);
@@ -133,9 +138,16 @@ public class AuctionController {
     @Operation(summary = "경매 취소", description = "경매를 취소합니다. 관리자 또는 판매자만 가능합니다.")
     @PostMapping("/{auctionId}/cancel")
     public ResponseEntity<ApiResponse<Void>> cancelAuction(
-            @PathVariable Long auctionId) {
+            @PathVariable Long auctionId,
+            @AuthenticationPrincipal UserDetails userDetails
+
+    ) {
+        String email = userDetails.getUsername();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
+
         // 실제 구현 시에는 인증된 사용자의 권한 체크 필요
-        auctionService.cancelAuction(auctionId);
+        auctionService.cancelAuction(auctionId,user.getId());
         return ApiResponse.success_only(SuccessStatus.AUCTION_CANCEL);
     }
 }
