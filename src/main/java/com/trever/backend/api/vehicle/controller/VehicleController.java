@@ -91,9 +91,15 @@ public class VehicleController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String sortBy,
-            @RequestParam(required = false) Boolean isAuction) {
+            @RequestParam(required = false) Boolean isAuction,
+            @AuthenticationPrincipal UserDetails userDetails
+            ) {
+
+        String email = userDetails.getUsername();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
         
-        VehicleListResponse vehicles = vehicleService.getVehicles(page, size, sortBy, isAuction);
+        VehicleListResponse vehicles = vehicleService.getVehicles(page, size, sortBy, isAuction, user.getId());
         return ApiResponse.success(SuccessStatus.CAR_INFO_SUCCESS, vehicles);
     }
     
