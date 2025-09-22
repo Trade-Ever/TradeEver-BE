@@ -37,10 +37,14 @@ public class VehicleResponse {
     private Integer favoriteCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Boolean isSeller;
     private Long sellerId;
+    private String sellerLocationCity;
     private String sellerPhone;
     private String sellerName;
+    private String sellerProfileImageUrl;
     private List<VehiclePhotoDto> photos; // 차량 사진 목록 추가
+
 
     // 차종 정보 추가
     private String vehicleTypeName;

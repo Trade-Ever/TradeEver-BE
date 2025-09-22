@@ -41,6 +41,7 @@ public class VehicleListResponse {
         private String representativePhotoUrl;
         private Integer favoriteCount;
         private LocalDateTime createdAt;
+        private Boolean isFavorite;
 
         // 차종 정보 추가
         private String vehicleTypeName;
@@ -48,5 +49,10 @@ public class VehicleListResponse {
         // 옵션 요약 (주요 옵션 3개 정도만 표시)
         private List<String> mainOptions;
         private Integer totalOptionsCount;
+
+        // favorite 필드 setter 추가
+        public void setFavorite(boolean favorite) {
+            this.isFavorite = favorite;
+        }
     }
 }

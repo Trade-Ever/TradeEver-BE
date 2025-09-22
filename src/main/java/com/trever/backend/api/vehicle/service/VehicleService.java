@@ -2,7 +2,10 @@ package com.trever.backend.api.vehicle.service;
 
 import com.trever.backend.api.auction.dto.AuctionCreateRequest;
 import com.trever.backend.api.auction.service.AuctionService;
+import com.trever.backend.api.favorite.repository.FavoriteRepository;
 import com.trever.backend.api.recent.service.RecentViewService;
+import com.trever.backend.api.user.entity.UserProfile;
+import com.trever.backend.api.user.repository.UserProfileRepository;
 import com.trever.backend.api.vehicle.dto.*;
 import com.trever.backend.api.vehicle.entity.VehicleStatus;
 import com.trever.backend.basiccar.service.CarModelService;
@@ -29,6 +32,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -45,6 +49,8 @@ public class VehicleService {
     private final RecentViewService recentViewService;
     private final VehicleOptionService vehicleOptionService;
     private final CarModelService carModelService;
+    private final UserProfileRepository userProfileRepository;
+    private final FavoriteRepository favoriteRepository;
     
     /**
      * 새 차량 등록
@@ -151,6 +157,9 @@ public class VehicleService {
         User user = userRepository.findById(vehicle.getSeller().getId())
                 .orElseThrow(() -> new NotFoundException("판매자를 찾을 수 없습니다."));
 
+        UserProfile userProfile = userProfileRepository.findByUser(user)
+                .orElseThrow(()-> new NotFoundException("유저 프로필을 찾을 수 없습니다."));
+
         List<VehiclePhotoDto> photos = vehiclePhotoService.getVehiclePhotos(vehicle.getId()).stream()
                 .map(photo -> VehiclePhotoDto.builder()
                         .id(photo.getId())
@@ -167,6 +176,15 @@ public class VehicleService {
 
         // 차량 타입이 null일 경우 처리
         String vehicleTypeName = (vehicle.getVehicleType() != null) ? vehicle.getVehicleType().getDisplayName() : "미정";
+
+        boolean isSeller = false;
+        if (user != null) {
+            // 현재 사용자가 판매자인지 확인
+            if(vehicle.getSeller().getId().equals(user.getId())){
+               isSeller = true;
+            }
+        }
+
 
         // VehicleResponse에 대표 사진 URL 포함
         return VehicleResponse.builder()
@@ -191,18 +209,21 @@ public class VehicleService {
                 .vehicleTypeName(vehicleTypeName)
                 .options(options) // 옵션 목록 추가
                 .photos(photos)
+                .isSeller(isSeller)
                 .sellerId(user.getId())
                 .sellerPhone(user.getPhone())
                 .sellerName(user.getName())
+                .sellerLocationCity(userProfile.getLocationCity())
+                .sellerProfileImageUrl(userProfile.getProfileImageUrl())
                 .updatedAt(vehicle.getUpdatedAt())
                 .createdAt(vehicle.getCreatedAt())
                 .build();
     }
-    
+
     /**
      * 차량 목록 조회
      */
-    public VehicleListResponse getVehicles(int page, int size, String sortBy, Boolean isAuction) {
+    public VehicleListResponse getVehicles(int page, int size, String sortBy, Boolean isAuction, Long userId) {
         Sort sort = Sort.by(Sort.Direction.DESC, sortBy != null ? sortBy : "createdAt");
         Pageable pageable = PageRequest.of(page, size, sort);
 
@@ -216,8 +237,25 @@ public class VehicleService {
             vehiclesPage = vehicleRepository.findAll(pageable);
         }
 
+        // 현재 사용자가 찜한 차량 ID 목록 조회
+        Set<Long> favoriteVehicleIds = userId != null ?
+                favoriteRepository.findByUserId(userId).stream()
+                        .map(favorite -> favorite.getVehicle().getId())
+                        .collect(Collectors.toSet()) :
+                Set.of();
+
         List<VehicleListResponse.VehicleSummary> summaries = vehiclesPage.getContent().stream()
-                .map(this::buildVehicleSummary)
+                .map(vehicle -> {
+                    // 기존 방식대로 VehicleSummary 생성
+                    VehicleListResponse.VehicleSummary summary = buildVehicleSummary(vehicle);
+
+                    // 찜 여부 설정
+                    if (userId != null) {
+                        summary.setFavorite(favoriteVehicleIds.contains(vehicle.getId()));
+                    }
+
+                    return summary;
+                })
                 .collect(Collectors.toList());
 
         return VehicleListResponse.builder()
@@ -226,7 +264,6 @@ public class VehicleService {
                 .pageNumber(page)
                 .pageSize(size)
                 .build();
-
     }
 
     
@@ -319,6 +356,7 @@ public class VehicleService {
                 .favoriteCount(vehicle.getFavoriteCount())
                 .createdAt(vehicle.getCreatedAt())
                 .totalOptionsCount(options.size())
+                .isFavorite(false)
                 .build();
     }
 
