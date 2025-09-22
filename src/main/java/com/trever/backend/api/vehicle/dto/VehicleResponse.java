@@ -35,7 +35,7 @@ public class VehicleResponse {
     private String vehicleStatus;
     private Long auctionId;
     private Integer favoriteCount;
-    private boolean isFavorited;
+    private boolean isFavorite;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Boolean isSeller;

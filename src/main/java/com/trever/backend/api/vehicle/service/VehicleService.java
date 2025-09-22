@@ -183,6 +183,11 @@ public class VehicleService {
                isSeller = true;
             }
         }
+
+        boolean isFavorite = false;
+        if (userId != null) {
+            isFavorite = favoriteRepository.existsByUserIdAndVehicleId(userId, vehicle.getId());
+        }
       
         // VehicleResponse에 대표 사진 URL 포함
         return VehicleResponse.builder()
@@ -198,6 +203,7 @@ public class VehicleService {
                 .accidentDescription(vehicle.getAccidentDescription())
                 .description(vehicle.getDescription())
                 .favoriteCount(vehicle.getFavoriteCount())
+                .isFavorite(isFavorite)
                 .vehicleStatus(vehicle.getVehicleStatus().getDisplayName())
                 .engineCc(vehicle.getEngineCc())
                 .horsepower(vehicle.getHorsepower())
@@ -341,6 +347,7 @@ public class VehicleService {
 
         return VehicleListResponse.VehicleSummary.builder()
                 .id(vehicle.getId())
+                .auctionId(vehicle.getAuctionId())
                 .vehicleTypeName(vehicleTypeName)
                 .mainOptions(mainOptions)
                 .carNumber(vehicle.getCarNumber())
