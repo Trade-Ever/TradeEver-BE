@@ -9,7 +9,7 @@ import lombok.*;
 @Builder
 public class UserUpdateRequestDTO {
     private String name;
-    private String profileImageUrl;
-    private String newPassword;
-    private String checkedPassword;
+    private String phone;
+    private String locationCity;
+    private String birthDate;
 }

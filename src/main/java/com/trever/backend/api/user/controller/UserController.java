@@ -1,5 +1,7 @@
 package com.trever.backend.api.user.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.gax.rpc.ApiException;
 import com.trever.backend.api.user.dto.*;
 import com.trever.backend.api.user.service.UserService;
 import com.trever.backend.common.response.ApiResponse;
@@ -8,11 +10,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final ObjectMapper objectMapper;
 
     // 회원가입
     @Operation(summary = "회원가입 API", description = "회원정보를 받아 사용자를 등록합니다.")
@@ -38,18 +43,39 @@ public class UserController {
         return ApiResponse.success(SuccessStatus.SEND_LOGIN_SUCCESS, tokens);
     }
 
-    @Operation(summary = "회원 추가 정보 입력(완성) API", description = "로그인한 사용자가 전화번호/주소/생년월일/이름 등 누락된 정보를 채웁니다.")
-    @PostMapping("/me/complete")
+    @Operation(
+            summary = "회원 추가 정보 입력(완성) API",
+            description = "로그인한 사용자가 전화번호/주소/생년월일/이름 등 누락된 정보를 채웁니다.\n\n" +
+                    "요청 예시:\n" +
+                    "```\n" +
+                    "Content-Type: multipart/form-data\n\n" +
+                    "{\n" +
+                    "  \"name\": \"홍길동\",\n" +
+                    "  \"phone\": \"010-1234-5678\",\n" +
+                    "  \"locationCity\": \"서울시 강남구\",\n" +
+                    "  \"birthDate\": \"yyyy-MM-dd\"\n" +
+                    "}\n" +
+                    "profileImage: (이미지 파일)\n" +
+                    "```"
+    )
+    @PostMapping(value = "/me/complete", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<Void>> completeProfile(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody UserCompleteRequestDTO req) {
+            @RequestPart("userInfo") String userInfoJson,
+            @RequestPart(value = "profileImage", required = false) MultipartFile profileImage
+    ) {
+        try {
+            // JSON 문자열 → DTO 파싱
+            UserCompleteRequestDTO req = objectMapper.readValue(userInfoJson, UserCompleteRequestDTO.class);
 
+            String email = userDetails.getUsername();
+            userService.completeUserProfile(email, req, profileImage);
 
-
-        String email = userDetails.getUsername();
-        userService.completeUserProfile(email, req);
-
-        return ApiResponse.success_only(SuccessStatus.UPDATE_PROFILE_SUCCESS);
+            return ApiResponse.success_only(SuccessStatus.UPDATE_PROFILE_SUCCESS);
+        } catch (Exception e) {
+            log.error("프로필 정보 처리 중 오류 발생: {}", e.getMessage(), e);
+            throw new RuntimeException("프로필 정보 처리 중 오류가 발생했습니다: " + e.getMessage());
+        }
     }
 
     // 로그인
@@ -81,16 +107,47 @@ public class UserController {
         return ApiResponse.success(SuccessStatus.SEND_MEMBER_SUCCESS, myPageResponseDTO);
     }
 
-    @Operation(summary = "프로필 수정 API", description = "로그인한 사용자의 프로필 정보를 수정합니다.")
-    @PatchMapping("/profile")
+    @Operation(
+            summary = "프로필 수정 API",
+            description = "로그인한 사용자의 프로필 정보를 수정합니다. 프로필 정보나 이미지 중 하나만 업데이트할 수도 있습니다.\n\n" +
+                    "요청 예시:\n" +
+                    "```\n" +
+                    "Content-Type: multipart/form-data\n\n" +
+                    "{\n" +
+                    "  \"name\": \"홍길동\",\n" +
+                    "  \"phone\": \"010-1234-5678\",\n" +
+                    "  \"locationCity\": \"서울시 강남구\",\n" +
+                    "  \"birthDate\": \"yyyy-MM-dd\"\n" +
+                    "}\n" +
+                    "profileImage: (이미지 파일)\n" +
+                    "```"
+    )
+    @PatchMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<Void>> updateProfile(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody UserUpdateRequestDTO userUpdateRequestDTO) {
+            @RequestPart(value = "userInfo", required = false) String userUpdateJson,
+            @RequestPart(value = "profileImage", required = false) MultipartFile profileImage
+    ) {
+        try {
+            String email = userDetails.getUsername();
+            UserUpdateRequestDTO userUpdateRequestDTO = null;
 
-        String email = userDetails.getUsername();
-        userService.updateUser(email, userUpdateRequestDTO);
+            // userInfo가 제공된 경우에만 JSON 파싱 시도
+            if (userUpdateJson != null && !userUpdateJson.trim().isEmpty()) {
+                userUpdateRequestDTO = objectMapper.readValue(userUpdateJson, UserUpdateRequestDTO.class);
+            } else {
+                // userInfo가 없는 경우 빈 객체 생성
+                userUpdateRequestDTO = new UserUpdateRequestDTO();
+            }
 
-        return ApiResponse.success_only(SuccessStatus.UPDATE_PROFILE_SUCCESS);
+            // 이미지만 있거나, 정보만 있거나, 둘 다 있는 경우 처리
+            userService.updateUser(email, userUpdateRequestDTO, profileImage);
+
+            return ApiResponse.success_only(SuccessStatus.UPDATE_PROFILE_SUCCESS);
+        } catch (Exception e) {
+            log.error("프로필 업데이트 중 오류 발생: {}", e.getMessage(), e);
+            throw new RuntimeException("프로필 업데이트 중 오류가 발생했습니다: " + e.getMessage());
+        }
     }
 
     @Operation(summary = "로그아웃 API", description = "사용자가 로그아웃합니다.")

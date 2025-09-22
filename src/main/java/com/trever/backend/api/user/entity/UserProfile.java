@@ -25,6 +25,9 @@ public class UserProfile extends BaseTimeEntity {
     private User user; // 사용자 ID (FK)
 
     private LocalDate birthDate; // 생년월일
+
+    @Column(length = 1000)
     private String profileImageUrl; // 프로필 사진 URL
+
     private String locationCity; // 거주 도시
 }

@@ -9,6 +9,7 @@ import com.trever.backend.api.user.entity.UserWallet;
 import com.trever.backend.api.user.repository.UserProfileRepository;
 import com.trever.backend.api.user.repository.UserRepository;
 import com.trever.backend.api.user.repository.UserWalletRepository;
+import com.trever.backend.common.config.firebase.FirebaseStorageService;
 import com.trever.backend.common.exception.BadRequestException;
 import com.trever.backend.common.exception.NotFoundException;
 import com.trever.backend.common.response.ErrorStatus;
@@ -20,8 +21,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.threeten.bp.format.DateTimeParseException;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -40,6 +43,7 @@ public class UserService {
     private final JwtProvider jwtProvider;
     private final UserWalletRepository userWalletRepository;
     private final GoogleOAuthService googleOAuthService;
+    private final FirebaseStorageService firebaseStorageService;
 
     // 회원가입
     @Transactional
@@ -194,7 +198,7 @@ public class UserService {
     }
 
     @Transactional
-    public void completeUserProfile(String email, UserCompleteRequestDTO req) {
+    public void completeUserProfile(String email, UserCompleteRequestDTO req, MultipartFile profileImage) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
@@ -222,6 +226,17 @@ public class UserService {
                 profile.setBirthDate(parsed);
             } catch (DateTimeParseException e) {
                 throw new BadRequestException("birthDate must be yyyy-MM-dd");
+            }
+        }
+
+        // 프로필 이미지 처리
+        if (profileImage != null && !profileImage.isEmpty()) {
+            try {
+                // 새 이미지 업로드
+                String imageUrl = firebaseStorageService.uploadImage(profileImage, "profiles");
+                profile.setProfileImageUrl(imageUrl);
+            } catch (IOException e) {
+                throw new RuntimeException("프로필 이미지 업로드에 실패했습니다.", e);
             }
         }
 
@@ -281,7 +296,7 @@ public class UserService {
 
     // 회원 정보 수정
     @Transactional
-    public void updateUser(String email, UserUpdateRequestDTO userUpdateRequestDTO) {
+    public void updateUser(String email, UserUpdateRequestDTO userUpdateRequestDTO, MultipartFile profileImage) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
@@ -292,14 +307,37 @@ public class UserService {
             user.setName(userUpdateRequestDTO.getName());
         }
 
-        if (userUpdateRequestDTO.getProfileImageUrl() != null) {
-            profile.setProfileImageUrl(userUpdateRequestDTO.getProfileImageUrl());
+        if (userUpdateRequestDTO.getPhone() != null) {
+            user.setPhone(userUpdateRequestDTO.getPhone());
         }
-        if (userUpdateRequestDTO.getNewPassword() != null && userUpdateRequestDTO.getCheckedPassword() != null) {
-            if (!userUpdateRequestDTO.getNewPassword().equals(userUpdateRequestDTO.getCheckedPassword())) {
-                throw new BadRequestException(ErrorStatus.PASSWORD_MISMATCH_EXCEPTION.getMessage());
+
+        if (userUpdateRequestDTO.getBirthDate() != null && !userUpdateRequestDTO.getBirthDate().isBlank()) {
+            try {
+                LocalDate parsed = LocalDate.parse(userUpdateRequestDTO.getBirthDate(), DateTimeFormatter.ISO_LOCAL_DATE);
+                profile.setBirthDate(parsed);
+            } catch (DateTimeParseException e) {
+                throw new BadRequestException("birthDate must be yyyy-MM-dd");
             }
-            user.setPassword(passwordEncoder.encode(userUpdateRequestDTO.getNewPassword()));
+        }
+
+        if(userUpdateRequestDTO.getLocationCity() != null) {
+            profile.setLocationCity(userUpdateRequestDTO.getLocationCity());
+        }
+
+        // 프로필 이미지 처리
+        if (profileImage != null && !profileImage.isEmpty()) {
+            try {
+                // 기존 프로필 이미지가 있으면 삭제
+                if (profile.getProfileImageUrl() != null && !profile.getProfileImageUrl().isEmpty()) {
+                    firebaseStorageService.deleteImage(profile.getProfileImageUrl());
+                }
+
+                // 새 이미지 업로드
+                String imageUrl = firebaseStorageService.uploadImage(profileImage, "profiles");
+                profile.setProfileImageUrl(imageUrl);
+            } catch (IOException e) {
+                throw new RuntimeException("프로필 이미지 업로드에 실패했습니다.", e);
+            }
         }
 
         userRepository.save(user);
