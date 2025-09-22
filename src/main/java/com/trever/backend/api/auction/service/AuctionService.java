@@ -253,11 +253,55 @@ public class AuctionService {
             }
         }
     }
+
+    /**
+     * 00:05:00에 실행되는 추가 경매 종료 스케줄러
+     */
+    @Scheduled(cron = "0 5 0 * * *") // 매일 00:05:00에 실행
+    @Transactional
+    public void endExpiredAuctionsAfterFiveMinutes() {
+        LocalDateTime now = LocalDateTime.now();
+        log.info("자정 5분 후 경매 종료 추가 스케줄러 실행: {}", now);
+
+        // 종료 시간이 지났지만 여전히 ACTIVE 상태인 경매 조회
+        List<Auction> expiredAuctions = auctionRepository.findByStatusAndEndAtBefore(AuctionStatus.ACTIVE, now);
+
+        if (!expiredAuctions.isEmpty()) {
+            log.info("자정 5분 후 종료 처리할 경매 수: {}", expiredAuctions.size());
+
+            for (Auction auction : expiredAuctions) {
+                processAuctionEnd(auction, now);
+            }
+        }
+
+        // PENDING_CLOSE 상태인 경매도 함께 처리
+        List<Auction> pendingCloseAuctions = auctionRepository.findByStatus(AuctionStatus.PENDING_CLOSE);
+        if (!pendingCloseAuctions.isEmpty()) {
+            log.info("자정 5분 후 PENDING_CLOSE 상태의 경매 처리 수: {}", pendingCloseAuctions.size());
+
+            for (Auction auction : pendingCloseAuctions) {
+                processAuctionEnd(auction, now);
+            }
+        }
+    }
     
     /**
      * 경매 종료 처리 로직
      */
     private void processAuctionEnd(Auction auction, LocalDateTime now) {
+        // 종료 시간 검증
+        if (now.isBefore(auction.getEndAt())) {
+            log.warn("아직 종료 시간이 되지 않은 경매를 종료 처리하려고 시도했습니다. 경매 ID: {}, 종료 시간: {}", 
+                    auction.getId(), auction.getEndAt());
+            return;
+        }
+        
+        // 이미 종료된 경매는 건너뜀
+        if (auction.getStatus() != AuctionStatus.ACTIVE && auction.getStatus() != AuctionStatus.PENDING_CLOSE) {
+            log.info("이미 종료된 경매입니다. 경매 ID: {}, 상태: {}", auction.getId(), auction.getStatus());
+            return;
+        }
+
         // 최고 입찰자 조회
         Optional<Bid> highestBid = bidRepository.findHighestBidByAuctionId(auction.getId());
         
@@ -266,7 +310,6 @@ public class AuctionService {
             auction.setStatus(AuctionStatus.ENDED);
             Bid winningBid = highestBid.get();
             User buyer = winningBid.getBidder();
-            User seller = auction.getVehicle().getSeller();
             
             // Transaction 엔티티를 생성하고 저장
             transactionService.createTransactionFromAuction(auction.getId());
@@ -331,6 +374,19 @@ public class AuctionService {
      * 경매 시작 처리 로직
      */
     private void processAuctionStart(Auction auction, LocalDateTime now) {
+        // 시작 시간 검증
+        if (now.isBefore(auction.getStartAt())) {
+            log.warn("아직 시작 시간이 되지 않은 경매를 시작 처리하려고 시도했습니다. 경매 ID: {}, 시작 시간: {}", 
+                    auction.getId(), auction.getStartAt());
+            return;
+        }
+        
+        // 이미 시작된 경매는 건너뜀
+        if (auction.getStatus() != AuctionStatus.UPCOMING) {
+            log.info("이미 시작된 경매입니다. 경매 ID: {}, 상태: {}", auction.getId(), auction.getStatus());
+            return;
+        }
+        
         auction.setStatus(AuctionStatus.ACTIVE);
         auctionRepository.save(auction);
         
