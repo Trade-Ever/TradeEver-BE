@@ -3,6 +3,7 @@ package com.trever.backend.api.auction.service;
 import com.trever.backend.api.auction.dto.BidRequest;
 import com.trever.backend.api.auction.dto.BidResponse;
 import com.trever.backend.api.user.entity.User;
+import com.trever.backend.common.exception.BadRequestException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -62,12 +63,14 @@ public class AuctionBidQueueService {
      */
     private void processBidQueue(Long auctionId) {
         try {
+            Queue<BidTask> queue = bidQueues.get(auctionId);
+            
             while (true) {
-                Queue<BidTask> queue = bidQueues.get(auctionId);
+                // 1. 큐에서 작업 꺼내기
                 BidTask task = queue.poll();
                 
+                // 2. 작업이 없으면 스레드 종료
                 if (task == null) {
-                    // 큐가 비었으면 스레드 종료
                     processingThreads.remove(auctionId);
                     log.debug("입찰 처리 스레드 종료 - 경매 ID: {}", auctionId);
                     break;
@@ -77,22 +80,53 @@ public class AuctionBidQueueService {
                     log.debug("입찰 처리 시작 - 경매 ID: {}, 입찰자: {}, 입찰가: {}", 
                             auctionId, task.getBidder().getName(), task.getRequest().getBidPrice());
                     
-                    // 기존 AuctionService.processPlaceBid() 메서드의 내용을 여기로 이동
+                    // 3. 입찰 처리 로직 호출
                     BidResponse response = auctionBidTransactionService.processPlaceBid(task.getRequest(), task.getBidder());
                     
+                    // 4. 성공 시 결과 반환
                     task.getFuture().complete(response);
                     log.debug("입찰 처리 완료 - 경매 ID: {}, 입찰 ID: {}", auctionId, response.getId());
+                    
                 } catch (Exception e) {
-                    log.error("입찰 처리 중 오류 - 경매 ID: {}, 오류: {}", auctionId, e.getMessage(), e);
+                    // 5. 오류 발생 시 예외 처리 및 클라이언트에게 반환
+                    log.error("입찰 처리 중 오류 - 경매 ID: {}, 오류: {}", auctionId, e.getMessage());
                     task.getFuture().completeExceptionally(e);
+                    
+                    // 6. 특정 예외의 경우 추가 조치
+                    if (e instanceof BadRequestException) {
+                        if (e.getMessage().contains("경매가 아직 시작되지 않았습니다") ||
+                            e.getMessage().contains("경매가 이미 종료되었습니다") ||
+                            e.getMessage().contains("경매가 활성 상태가 아닙니다")) {
+                            
+                            log.warn("경매 상태로 인한 입찰 거부 - 큐 처리를 중단합니다. 경매 ID: {}", auctionId);
+                            
+                            // 6.1. 큐에 남은 모든 작업에 동일한 예외 전달
+                            while (!queue.isEmpty()) {
+                                BidTask remainingTask = queue.poll();
+                                remainingTask.getFuture().completeExceptionally(e);
+                            }
+                            
+                            // 6.2. 스레드 종료
+                            processingThreads.remove(auctionId);
+                            break;  // while 루프 종료
+                        }
+                    }
+                    
+                    // 7. 다른 예외의 경우 다음 작업으로 진행
                 }
                 
-                // 다음 작업 전에 잠시 대기
-                Thread.sleep(50);
+                // 8. 간격을 두고 다음 작업 처리 (선택적)
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.warn("입찰 처리 스레드 중단 - 경매 ID: {}", auctionId);
+        } catch (Exception e) {
+            // 9. 전체 처리 과정에서 예외 발생 시 스레드 정리
+            log.error("입찰 큐 처리 중 심각한 오류 발생 - 경매 ID: {}, 오류: {}", auctionId, e.getMessage(), e);
+            processingThreads.remove(auctionId);
         }
     }
 
