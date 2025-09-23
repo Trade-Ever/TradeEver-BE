@@ -101,6 +101,7 @@ public class AuctionController {
             
             return ResponseEntity.ok(ApiResponse.<BidResponse>builder()
                     .status(SuccessStatus.CREATE_BID_SUCCESS.getStatusCode())
+                    .success(true)
                     .message(SuccessStatus.CREATE_BID_SUCCESS.getMessage())
                     .data(response)
                     .build());
