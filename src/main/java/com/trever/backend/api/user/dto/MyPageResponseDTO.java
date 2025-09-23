@@ -14,6 +14,7 @@ public class MyPageResponseDTO {
     private String email;
     private String name;
     private String phone;
+    private boolean profileComplete;
 
     // user_profiles에서 가져오는 값
     private String profileImageUrl;
@@ -22,7 +23,7 @@ public class MyPageResponseDTO {
 
     private Long balance;
 
-    public static MyPageResponseDTO from(User user, UserProfile profile, Long balance) {
+    public static MyPageResponseDTO from(User user, UserProfile profile, Long balance, boolean profileComplete) {
         return MyPageResponseDTO.builder()
                 .userId(user.getId())
                 .email(user.getEmail())
@@ -32,6 +33,7 @@ public class MyPageResponseDTO {
                 .birthDate(profile.getBirthDate())
                 .locationCity(profile.getLocationCity())
                 .balance(balance)
+                .profileComplete(profileComplete)
                 .build();
     }
 }

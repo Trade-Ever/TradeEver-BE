@@ -289,6 +289,35 @@ public class VehicleService {
                 .build();
     }
 
+    /**
+     * 사용자가 등록한 차량 목록 조회
+     */
+    public VehicleListResponse getMyVehicles(Long userId, int page, int size, String sortBy) {
+        // 정렬 기준 설정 (기본값: 생성일자 내림차순)
+        Sort sort = Sort.by(Sort.Direction.DESC, sortBy != null ? sortBy : "createdAt");
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        // 사용자 존재 확인
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다: " + userId));
+
+        // 사용자가 판매자인 차량 조회
+        Page<Vehicle> vehiclesPage = vehicleRepository.findBySeller(user, pageable);
+
+        // 차량 목록을 VehicleSummary로 변환
+        List<VehicleListResponse.VehicleSummary> summaries = vehiclesPage.getContent().stream()
+                .map(this::buildVehicleSummary)
+                .collect(Collectors.toList());
+
+        // 응답 객체 생성
+        return VehicleListResponse.builder()
+                .vehicles(summaries)
+                .totalCount((int) vehiclesPage.getTotalElements())
+                .pageNumber(page)
+                .pageSize(size)
+                .build();
+    }
+
     
     /**
      * 차량 삭제

@@ -135,6 +135,26 @@ public class VehicleController {
 //        return ApiResponse.success(SuccessStatus.BID_SUCESS, VehicleStatus.values());
 //    }
 
+    /**
+     * 내가 등록한 차량 목록 조회
+     */
+    @GetMapping("/my-vehicles")
+    @Operation(summary = "내가 등록한 차량 목록조회", description = "내가 등록한 차량 목록조회")
+    public ResponseEntity<ApiResponse<VehicleListResponse>> getMyVehicles(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sortBy,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        String email = userDetails.getUsername();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
+        
+        VehicleListResponse response = vehicleService.getMyVehicles(user.getId(), page, size, sortBy);
+        
+        return ApiResponse.success(SuccessStatus.READ_MY_VEHICLE_SUCCESS, response);
+    }
+
 
     /**
      * 필터링 조건으로 차량 검색
@@ -148,7 +168,7 @@ public class VehicleController {
         VehicleListResponse result = vehicleService.searchByFilter(request);
 
         Long loginUserId = null;
-        if (userDetails != null) {
+        if (userDetails != null && request.getKeyword() != null) {
             String email = userDetails.getUsername();
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
