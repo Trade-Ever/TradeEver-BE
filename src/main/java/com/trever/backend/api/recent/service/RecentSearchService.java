@@ -35,6 +35,15 @@ public class RecentSearchService {
                 .build();
 
         recentSearchRepository.save(search);
+
+        // 5개 넘으면 오래된 것 삭제
+        List<RecentSearch> searches = recentSearchRepository.findByUserIdOrderByUpdatedAtDesc(userId);
+        if (searches.size() > 5) {
+            // 오래된 검색어를 삭제
+            searches.subList(5, searches.size())
+                    .forEach(recentSearchRepository::delete);
+            recentSearchRepository.flush();
+        }
     }
 
     // 최근 검색어 조회
