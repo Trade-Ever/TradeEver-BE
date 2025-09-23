@@ -42,7 +42,7 @@ public class RecentSearchService {
         return recentSearchRepository.findByUserIdOrderByUpdatedAtDesc(userId).stream()
                 .map(RecentSearch::getKeyword)
                 .distinct() // 혹시라도 DB에 중복 들어간 경우 방지
-                .limit(10)
+                .limit(5)
                 .toList();
     }
 
