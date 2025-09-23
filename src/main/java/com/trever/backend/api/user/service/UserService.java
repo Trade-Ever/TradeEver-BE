@@ -166,6 +166,16 @@ public class UserService {
         UserProfile profile = userProfileRepository.findByUser(user)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
+        boolean profileComplete = isProfileComplete(user, profile);
+
+        return TokenResponseDTO.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .profileComplete(profileComplete)
+                .build();
+    }
+
+    private static boolean isProfileComplete(User user, UserProfile profile) {
         List<String> missing = new ArrayList<>();
 
         // 이름 검사
@@ -188,13 +198,7 @@ public class UserService {
             missing.add("locationCity");
         }
 
-        boolean profileComplete = missing.isEmpty();
-
-        return TokenResponseDTO.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .profileComplete(profileComplete)
-                .build();
+        return missing.isEmpty();
     }
 
     @Transactional
@@ -280,7 +284,9 @@ public class UserService {
                 .map(UserWallet::getBalance)
                 .orElse(0L);
 
-        return MyPageResponseDTO.from(user, profile, balance);
+        boolean profileComplete = isProfileComplete(user, profile);
+
+        return MyPageResponseDTO.from(user, profile, balance, profileComplete);
     }
 
     // 회원 정보 수정
