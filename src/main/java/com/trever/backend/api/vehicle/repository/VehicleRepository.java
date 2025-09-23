@@ -68,4 +68,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long>,VehicleR
 
     // 사용자가 등록한 차량 조회 메서드 추가
     Page<Vehicle> findBySeller(User seller, Pageable pageable);
+
+    //차량번호로 존재 여부 확인
+    boolean existsByCarNumber(String carNumber);
 }

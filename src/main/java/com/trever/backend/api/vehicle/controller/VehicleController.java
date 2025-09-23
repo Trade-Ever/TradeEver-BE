@@ -155,6 +155,18 @@ public class VehicleController {
         return ApiResponse.success(SuccessStatus.READ_MY_VEHICLE_SUCCESS, response);
     }
 
+    /**
+     * 차량번호 존재 여부 확인 API
+     */
+    @GetMapping("/check-car-number")
+    public ResponseEntity<ApiResponse<CarNumberExistsResponse>> checkCarNumberExists(
+            @RequestParam String carNumber) {
+
+        CarNumberExistsResponse response = vehicleService.checkCarNumberExists(carNumber);
+
+        return ApiResponse.success(SuccessStatus.CHECK_CAR_NUMBER_SUCCESS,response);
+    }
+
 
     /**
      * 필터링 조건으로 차량 검색

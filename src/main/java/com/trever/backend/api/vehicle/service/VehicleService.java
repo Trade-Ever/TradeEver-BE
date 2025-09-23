@@ -10,6 +10,7 @@ import com.trever.backend.api.vehicle.dto.*;
 import com.trever.backend.api.vehicle.entity.VehicleStatus;
 import com.trever.backend.basiccar.service.CarModelService;
 import com.trever.backend.common.exception.BadRequestException;
+import com.trever.backend.common.exception.InternalServerException;
 import com.trever.backend.common.exception.NotFoundException;
 import com.trever.backend.api.user.entity.User;
 import com.trever.backend.api.user.repository.UserRepository;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 
@@ -316,6 +318,39 @@ public class VehicleService {
                 .pageNumber(page)
                 .pageSize(size)
                 .build();
+    }
+
+    /**
+     * 차량번호 존재 여부 확인
+     */
+    public CarNumberExistsResponse checkCarNumberExists(String carNumber) {
+        try {
+            // 차량번호 유효성 검사
+            if (carNumber == null || carNumber.trim().isEmpty()) {
+                throw new BadRequestException("차량번호는 필수 입력 항목입니다.");
+            }
+
+            // 차량번호 형식 정규식 검증
+            String regex = "^\\d{2,3}[가-힣]\\d{4}$"; // 예: 12가3456 또는 123가4567 형식
+            if (!Pattern.matches(regex, carNumber)) {
+                throw new BadRequestException("올바른 차량번호 형식이 아닙니다. (예: 12가3456)");
+            }
+
+            boolean exists = vehicleRepository.existsByCarNumber(carNumber);
+
+            // 정상 처리된 경우
+            return CarNumberExistsResponse.builder()
+                    .carNumber(carNumber)
+                    .exists(exists)
+                    .build();
+
+        } catch (BadRequestException e) {
+            // 클라이언트 오류 발생 시, 400 상태와 함께 메시지 반환
+            throw new BadRequestException(e.getMessage());
+        } catch (Exception e) {
+            // 서버 오류 발생 시, 500 상태와 함께 메시지 반환
+            throw new InternalServerException(e.getMessage());
+        }
     }
 
     
