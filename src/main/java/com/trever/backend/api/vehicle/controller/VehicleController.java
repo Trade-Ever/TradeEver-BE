@@ -168,7 +168,7 @@ public class VehicleController {
         VehicleListResponse result = vehicleService.searchByFilter(request);
 
         Long loginUserId = null;
-        if (userDetails != null) {
+        if (userDetails != null && request.getKeyword() != null) {
             String email = userDetails.getUsername();
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
