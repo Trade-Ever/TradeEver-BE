@@ -23,6 +23,7 @@ public class Vehicle extends BaseTimeEntity {
     
     private String carNumber;
 
+    @Column(length = 1000)
     private String description;
     
     private String manufacturer;
@@ -41,6 +42,7 @@ public class Vehicle extends BaseTimeEntity {
     
     private Character accidentHistory;
 
+    @Column(length = 1000)
     private String accidentDescription;
 
     // String -> VehicleStatus 열거형으로 변경
