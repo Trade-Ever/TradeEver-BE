@@ -29,14 +29,14 @@ public class RecentViewController {
 
     @Operation(summary = "최근 본 차량 조회", description = "사용자의 최근 본 차량 목록을 조회합니다.")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<VehicleListResponse.VehicleSummary>>> getRecentViews(
+    public ResponseEntity<ApiResponse<VehicleListResponse>> getRecentViews(
             @AuthenticationPrincipal UserDetails userDetails) {
 
         String email = userDetails.getUsername();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException(ErrorStatus.USER_NOT_FOUND.getMessage()));
 
-        List<VehicleListResponse.VehicleSummary> recentViews = recentViewService.getRecentViews(user.getId());
+        VehicleListResponse recentViews = recentViewService.getRecentViews(user.getId());
 
         return ApiResponse.success(SuccessStatus.RECENT_VIEW_LIST_SUCCESS, recentViews);
     }
