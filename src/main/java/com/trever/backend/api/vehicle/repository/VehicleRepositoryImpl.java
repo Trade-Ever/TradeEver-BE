@@ -31,7 +31,7 @@ public class VehicleRepositoryImpl implements VehicleRepositoryCustom {
 
         // 기본 조건: 차량 상태가 ACTIVE인 것만 조회
         BooleanBuilder builder = new BooleanBuilder();
-        builder.and(vehicle.vehicleStatus.eq(VehicleStatus.ACTIVE));
+        builder.and(vehicle.vehicleStatus.in(VehicleStatus.ACTIVE, VehicleStatus.AUCTIONS));
 
         // 1. 키워드 검색 (제목 포함)
         if (StringUtils.hasText(request.getKeyword())) {

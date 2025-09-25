@@ -59,7 +59,8 @@ public class RecentViewService {
         List<Vehicle> recentVehicles = recentViewRepository.findByUserIdOrderByUpdatedAtDesc(userId)
                 .stream()
                 .map(RecentView::getVehicle)
-                .filter(vehicle -> vehicle.getVehicleStatus() == VehicleStatus.ACTIVE)
+                .filter(vehicle -> vehicle.getVehicleStatus() == VehicleStatus.ACTIVE ||
+                        vehicle.getVehicleStatus() == VehicleStatus.AUCTIONS)
                 .limit(20)
                 .collect(Collectors.toList());
 
